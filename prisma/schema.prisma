@@ -1,0 +1,1287 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model account_daily_balance {
+  id                 BigInt   @id @default(autoincrement())
+  user_id            BigInt
+  account_id         BigInt
+  date               DateTime @db.Date
+  balance_end_of_day Decimal  @db.Decimal(12, 2)
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime @default(now()) @db.Timestamptz(6)
+  accounts           accounts @relation(fields: [account_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users              users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([account_id, date], map: "uq_account_daily_balance")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model accounts {
+  id                    BigInt                  @id @default(autoincrement())
+  user_id               BigInt
+  business_id           BigInt?
+  name                  String                  @db.VarChar(255)
+  type                  String                  @db.VarChar(30)
+  currency              String                  @db.VarChar(10)
+  provider              String?                 @db.VarChar(100)
+  is_active             Boolean                 @default(true)
+  include_in_budget     Boolean                 @default(true)
+  include_in_net_worth  Boolean                 @default(true)
+  connection_type       String?                 @db.VarChar(30)
+  created_at            DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                @default(now()) @db.Timestamptz(6)
+  account_daily_balance account_daily_balance[]
+  businesses            businesses?             @relation(fields: [business_id], references: [id], onUpdate: NoAction)
+  users                 users                   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  debts                 debts[]
+  income_sources        income_sources[]
+  portfolios            portfolios[]
+  recurring_contracts   recurring_contracts[]
+  savings_goals         savings_goals[]
+  transactions          transactions[]
+
+  @@index([business_id], map: "idx_accounts_business")
+  @@index([user_id], map: "idx_accounts_user")
+}
+
+model alert_settings {
+  id         BigInt   @id @default(autoincrement())
+  user_id    BigInt
+  type       String   @db.VarChar(50)
+  enabled    Boolean  @default(true)
+  threshold  Decimal? @db.Decimal(12, 4)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, type], map: "uq_alert_settings")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model alerts {
+  id                  BigInt    @id @default(autoincrement())
+  user_id             BigInt
+  type                String    @db.VarChar(50)
+  related_entity_type String?   @db.VarChar(50)
+  related_entity_id   BigInt?
+  message             String
+  severity            String    @default("info") @db.VarChar(20)
+  created_at          DateTime  @default(now()) @db.Timestamptz(6)
+  seen_at             DateTime? @db.Timestamptz(6)
+  users               users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id, created_at], map: "idx_alerts_user_created")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model attachments {
+  id           BigInt      @id @default(autoincrement())
+  user_id      BigInt
+  business_id  BigInt?
+  related_type String      @db.VarChar(50)
+  related_id   BigInt
+  file_url     String
+  filename     String?     @db.VarChar(255)
+  mime_type    String?     @db.VarChar(100)
+  created_at   DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime    @default(now()) @db.Timestamptz(6)
+  businesses   businesses? @relation(fields: [business_id], references: [id], onUpdate: NoAction)
+  users        users       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([business_id], map: "idx_attachments_business")
+  @@index([related_type, related_id], map: "idx_attachments_related")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model budget_lines {
+  id                  BigInt           @id @default(autoincrement())
+  budget_id           BigInt
+  category_id         BigInt
+  category_group_id   BigInt?
+  spending_limit      Decimal?         @db.Decimal(12, 2)
+  priority            String?          @db.VarChar(20)
+  alert_threshold_pct Decimal?         @default(80) @db.Decimal(5, 2)
+  note                String?
+  created_at          DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime         @default(now()) @db.Timestamptz(6)
+  budgets             budgets          @relation(fields: [budget_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  category_groups     category_groups? @relation(fields: [category_group_id], references: [id], onUpdate: NoAction)
+  categories          categories       @relation(fields: [category_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([budget_id, category_id], map: "uq_budget_lines")
+  @@index([category_group_id], map: "idx_budget_lines_category_group")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model budgets {
+  id                   BigInt         @id @default(autoincrement())
+  user_id              BigInt
+  business_id          BigInt?
+  name                 String?        @db.VarChar(255)
+  period_type          String         @db.VarChar(20)
+  year                 Int?
+  month                Int?
+  start_date           DateTime?      @db.Date
+  end_date             DateTime?      @db.Date
+  scenario             String         @default("base") @db.VarChar(20)
+  version_no           Int            @default(1)
+  status               String         @default("active") @db.VarChar(20)
+  currency             String?        @db.VarChar(10)
+  total_spending_limit Decimal?       @db.Decimal(12, 2)
+  include_accounts     Json?
+  auto_generated       Boolean        @default(false)
+  created_at           DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime       @default(now()) @db.Timestamptz(6)
+  budget_lines         budget_lines[]
+  users                users          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  businesses           businesses?    @relation(fields: [business_id], references: [id], onUpdate: NoAction)
+
+  @@index([business_id], map: "idx_budgets_business")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model business_monthly_summary {
+  id                 BigInt     @id @default(autoincrement())
+  business_id        BigInt
+  year               Int
+  month              Int
+  total_invoiced_ht  Decimal    @default(0) @db.Decimal(12, 2)
+  total_invoiced_ttc Decimal    @default(0) @db.Decimal(12, 2)
+  total_collected    Decimal    @default(0) @db.Decimal(12, 2)
+  total_costs        Decimal    @default(0) @db.Decimal(12, 2)
+  gross_margin_ht    Decimal    @default(0) @db.Decimal(12, 2)
+  gross_margin_pct   Decimal?   @db.Decimal(5, 2)
+  created_at         DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime   @default(now()) @db.Timestamptz(6)
+  businesses         businesses @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([business_id, year, month], map: "uq_business_monthly_summary")
+  @@index([business_id, year, month], map: "idx_business_monthly_summary_date")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model business_projects {
+  id                    BigInt                  @id @default(autoincrement())
+  business_id           BigInt
+  client_id             BigInt?
+  name                  String                  @db.VarChar(255)
+  type                  String?                 @db.VarChar(50)
+  status                String                  @default("lead") @db.VarChar(20)
+  budget_ht             Decimal?                @db.Decimal(12, 2)
+  expected_margin_pct   Decimal?                @db.Decimal(5, 2)
+  start_date            DateTime?               @db.Date
+  end_date              DateTime?               @db.Date
+  description           String?
+  created_at            DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                @default(now()) @db.Timestamptz(6)
+  businesses            businesses              @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  clients               clients?                @relation(fields: [client_id], references: [id], onUpdate: NoAction)
+  project_service_lines project_service_lines[]
+
+  @@unique([business_id, name], map: "uq_business_projects")
+  @@index([business_id, status], map: "idx_business_projects_business_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model business_settings {
+  business_id                BigInt     @id
+  invoice_prefix             String?    @db.VarChar(20)
+  invoice_next_number        Int        @default(1)
+  quote_prefix               String?    @db.VarChar(20)
+  quote_next_number          Int        @default(1)
+  default_vat_rate           Decimal?   @db.Decimal(5, 2)
+  default_payment_terms_days Int        @default(30)
+  monthly_revenue_goal       Decimal?   @db.Decimal(12, 2)
+  created_at                 DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime   @default(now()) @db.Timestamptz(6)
+  businesses                 businesses @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model businesses {
+  id                       BigInt                     @id @default(autoincrement())
+  user_id                  BigInt
+  name                     String                     @db.VarChar(255)
+  legal_form               String?                    @db.VarChar(50)
+  registration_number      String?                    @db.VarChar(100)
+  tax_id                   String?                    @db.VarChar(50)
+  currency                 String?                    @db.VarChar(10)
+  is_active                Boolean                    @default(true)
+  created_at               DateTime                   @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime                   @default(now()) @db.Timestamptz(6)
+  accounts                 accounts[]
+  attachments              attachments[]
+  business_monthly_summary business_monthly_summary[]
+  business_projects        business_projects[]
+  business_settings        business_settings?
+  users                    users                      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  client_monthly_summary   client_monthly_summary[]
+  clients                  clients[]
+  budgets                  budgets[]
+  project_clients          Client[]
+  invoices                 invoices[]
+  quotes                   quotes[]
+  services                 services[]
+  project_services_catalog Service[]
+  projects                 Project[]
+  suppliers                suppliers[]
+  transactions             transactions[]
+
+  @@unique([user_id, name], map: "uq_businesses")
+  @@index([user_id, is_active], map: "idx_businesses_user_active")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model cashflow_projections_monthly {
+  id                     BigInt   @id @default(autoincrement())
+  user_id                BigInt
+  year                   Int
+  month                  Int
+  scenario               String   @default("base") @db.VarChar(20)
+  projection_method      String?  @db.VarChar(30)
+  projected_income       Decimal  @default(0) @db.Decimal(12, 2)
+  projected_expense      Decimal  @default(0) @db.Decimal(12, 2)
+  projected_saving_in    Decimal  @default(0) @db.Decimal(12, 2)
+  projected_saving_out   Decimal  @default(0) @db.Decimal(12, 2)
+  projected_net_cashflow Decimal  @default(0) @db.Decimal(12, 2)
+  confidence_pct         Decimal? @db.Decimal(5, 2)
+  generated_at           DateTime @default(now()) @db.Timestamptz(6)
+  created_at             DateTime @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime @default(now()) @db.Timestamptz(6)
+  users                  users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, year, month, scenario], map: "uq_cashflow_projections")
+  @@index([user_id, year, month], map: "idx_cashflow_projections_user_date")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model categories {
+  id                       BigInt                     @id @default(autoincrement())
+  user_id                  BigInt?
+  name                     String                     @db.VarChar(100)
+  type                     String                     @db.VarChar(20)
+  parent_id                BigInt?
+  is_system                Boolean                    @default(false)
+  include_in_budget        Boolean                    @default(true)
+  include_in_reports       Boolean                    @default(true)
+  created_at               DateTime                   @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime                   @default(now()) @db.Timestamptz(6)
+  budget_lines             budget_lines[]
+  categories               categories?                @relation("categoriesTocategories", fields: [parent_id], references: [id], onUpdate: NoAction)
+  other_categories         categories[]               @relation("categoriesTocategories")
+  users                    users?                     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  category_group_members   category_group_members[]
+  category_monthly_summary category_monthly_summary[]
+  income_sources           income_sources[]
+  planned_cashflow_lines   planned_cashflow_lines[]
+  recurring_contracts      recurring_contracts[]
+  recurring_series         recurring_series[]
+  transaction_rules        transaction_rules[]
+  transactions             transactions[]
+}
+
+model category_group_members {
+  id              BigInt          @id @default(autoincrement())
+  group_id        BigInt
+  category_id     BigInt
+  created_at      DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime        @default(now()) @db.Timestamptz(6)
+  categories      categories      @relation(fields: [category_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  category_groups category_groups @relation(fields: [group_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([group_id, category_id], map: "uq_category_group_members")
+  @@index([category_id], map: "idx_category_group_members_category")
+}
+
+model category_groups {
+  id                     BigInt                   @id @default(autoincrement())
+  user_id                BigInt
+  name                   String                   @db.VarChar(100)
+  description            String?
+  color                  String?                  @db.VarChar(20)
+  created_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  budget_lines           budget_lines[]
+  category_group_members category_group_members[]
+  users                  users                    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  planned_cashflow_lines planned_cashflow_lines[]
+
+  @@unique([user_id, name], map: "uq_category_groups")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model category_monthly_summary {
+  id              BigInt     @id @default(autoincrement())
+  user_id         BigInt
+  category_id     BigInt
+  year            Int
+  month           Int
+  direction       String     @db.VarChar(3)
+  total_amount    Decimal    @default(0) @db.Decimal(12, 2)
+  nb_transactions Int        @default(0)
+  created_at      DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime   @default(now()) @db.Timestamptz(6)
+  categories      categories @relation(fields: [category_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users           users      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, category_id, year, month, direction], map: "uq_category_monthly_summary")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model claims {
+  id                     BigInt              @id @default(autoincrement())
+  user_id                BigInt
+  contact_id             BigInt?
+  name                   String              @db.VarChar(255)
+  principal_amount       Decimal             @db.Decimal(12, 2)
+  due_date               DateTime?           @db.Date
+  status                 String              @default("active") @db.VarChar(20)
+  grace_period_days      Int?
+  collateral_description String?
+  current_balance_cached Decimal?            @db.Decimal(14, 2)
+  created_at             DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime            @default(now()) @db.Timestamptz(6)
+  contacts               contacts?           @relation(fields: [contact_id], references: [id], onUpdate: NoAction)
+  users                  users               @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  payment_schedules      payment_schedules[]
+
+  @@index([user_id, status], map: "idx_claims_user_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model client_monthly_summary {
+  id                 BigInt     @id @default(autoincrement())
+  business_id        BigInt
+  client_id          BigInt
+  year               Int
+  month              Int
+  total_invoiced_ht  Decimal    @default(0) @db.Decimal(12, 2)
+  total_invoiced_ttc Decimal    @default(0) @db.Decimal(12, 2)
+  total_collected    Decimal    @default(0) @db.Decimal(12, 2)
+  total_costs        Decimal    @default(0) @db.Decimal(12, 2)
+  gross_margin_ht    Decimal    @default(0) @db.Decimal(12, 2)
+  gross_margin_pct   Decimal?   @db.Decimal(5, 2)
+  created_at         DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime   @default(now()) @db.Timestamptz(6)
+  businesses         businesses @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  clients            clients    @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([business_id, client_id, year, month], map: "uq_client_monthly_summary")
+  @@index([business_id, client_id, year, month], map: "idx_client_monthly_summary_date")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model clients {
+  id                     BigInt                   @id @default(autoincrement())
+  business_id            BigInt
+  name                   String                   @db.VarChar(255)
+  contact_name           String?                  @db.VarChar(255)
+  email                  String?                  @db.VarChar(255)
+  phone                  String?                  @db.VarChar(50)
+  billing_address        String?
+  shipping_address       String?
+  vat_number             String?                  @db.VarChar(50)
+  status                 String                   @default("active") @db.VarChar(20)
+  notes                  String?
+  created_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  business_projects      business_projects[]
+  client_monthly_summary client_monthly_summary[]
+  businesses             businesses               @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  invoices               invoices[]
+  quotes                 quotes[]
+  project_clients        Client[]
+
+  @@unique([business_id, name], map: "uq_clients")
+  @@index([business_id, status], map: "idx_clients_business_status")
+}
+
+model Client {
+  id           BigInt   @id @default(autoincrement())
+  user_id      BigInt
+  business_id  BigInt?
+  client_id    BigInt?
+  name         String   @db.VarChar(255)
+  type         String   @db.VarChar(30)
+  email        String?  @db.VarChar(255)
+  phone        String?  @db.VarChar(50)
+  company_name String?  @db.VarChar(255)
+  vat_number   String?  @db.VarChar(50)
+  address      String?
+  notes        String?
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @default(now()) @db.Timestamptz(6)
+  user         users    @relation("UserProjectClients", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  business     businesses? @relation(fields: [business_id], references: [id], onUpdate: NoAction)
+  client       clients? @relation(fields: [client_id], references: [id], onUpdate: NoAction)
+  projects     Project[]
+
+  @@index([user_id, business_id], map: "idx_project_clients_user_business")
+  @@index([client_id], map: "idx_project_clients_client")
+  @@map("project_clients")
+}
+
+model contacts {
+  id                  BigInt                @id @default(autoincrement())
+  user_id             BigInt
+  name                String                @db.VarChar(255)
+  type                String?               @db.VarChar(50)
+  email               String?               @db.VarChar(255)
+  phone               String?               @db.VarChar(50)
+  created_at          DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime              @default(now()) @db.Timestamptz(6)
+  claims              claims[]
+  users               users                 @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  debts               debts[]
+  income_sources      income_sources[]
+  recurring_contracts recurring_contracts[]
+  transactions        transactions[]
+
+  @@index([user_id, name], map: "idx_contacts_user_name")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model currency_rates {
+  id             BigInt   @id @default(autoincrement())
+  base_currency  String   @db.VarChar(10)
+  quote_currency String   @db.VarChar(10)
+  rate           Decimal  @db.Decimal(18, 6)
+  rate_date      DateTime @db.Date
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([base_currency, quote_currency, rate_date], map: "uq_currency_rates")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model debts {
+  id                       BigInt              @id @default(autoincrement())
+  user_id                  BigInt
+  contact_id               BigInt?
+  name                     String              @db.VarChar(255)
+  principal_amount         Decimal             @db.Decimal(12, 2)
+  interest_rate            Decimal?            @db.Decimal(5, 2)
+  start_date               DateTime?           @db.Date
+  end_date_expected        DateTime?           @db.Date
+  repayment_type           String?             @db.VarChar(20)
+  monthly_payment_expected Decimal?            @db.Decimal(12, 2)
+  linked_account_id        BigInt?
+  status                   String              @default("active") @db.VarChar(20)
+  grace_period_days        Int?
+  collateral_description   String?
+  current_balance_cached   Decimal?            @db.Decimal(14, 2)
+  created_at               DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime            @default(now()) @db.Timestamptz(6)
+  contacts                 contacts?           @relation(fields: [contact_id], references: [id], onUpdate: NoAction)
+  accounts                 accounts?           @relation(fields: [linked_account_id], references: [id], onUpdate: NoAction)
+  users                    users               @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  payment_schedules        payment_schedules[]
+
+  @@index([user_id, status], map: "idx_debts_user_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model import_batches {
+  id                 BigInt         @id @default(autoincrement())
+  user_id            BigInt
+  source             String?        @db.VarChar(50)
+  external_reference String?        @db.VarChar(100)
+  status             String         @default("completed") @db.VarChar(20)
+  imported_at        DateTime       @default(now()) @db.Timestamptz(6)
+  created_at         DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime       @default(now()) @db.Timestamptz(6)
+  users              users          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  transactions       transactions[]
+
+  @@index([user_id, imported_at], map: "idx_import_batches_user_imported_at")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model income_sources {
+  id                     BigInt                   @id @default(autoincrement())
+  user_id                BigInt
+  name                   String                   @db.VarChar(255)
+  type                   String?                  @db.VarChar(30)
+  contact_id             BigInt?
+  account_id             BigInt?
+  default_category_id    BigInt?
+  default_frequency      String?                  @db.VarChar(30)
+  is_active              Boolean                  @default(true)
+  notes                  String?
+  created_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  accounts               accounts?                @relation(fields: [account_id], references: [id], onUpdate: NoAction)
+  contacts               contacts?                @relation(fields: [contact_id], references: [id], onUpdate: NoAction)
+  categories             categories?              @relation(fields: [default_category_id], references: [id], onUpdate: NoAction)
+  users                  users                    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  planned_cashflow_lines planned_cashflow_lines[]
+  transaction_rules      transaction_rules[]
+  transactions           transactions[]
+
+  @@unique([user_id, name], map: "uq_income_sources")
+  @@index([user_id, is_active], map: "idx_income_sources_user_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model investment_movements {
+  id                    BigInt                @id @default(autoincrement())
+  portfolio_id          BigInt
+  position_id           BigInt?
+  date                  DateTime              @db.Date
+  type                  String                @db.VarChar(20)
+  quantity              Decimal?              @db.Decimal(18, 6)
+  price                 Decimal?              @db.Decimal(12, 4)
+  fees                  Decimal?              @db.Decimal(12, 2)
+  cash_amount           Decimal?              @db.Decimal(14, 2)
+  linked_transaction_id BigInt?
+  created_at            DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime              @default(now()) @db.Timestamptz(6)
+  transactions          transactions?         @relation(fields: [linked_transaction_id], references: [id], onUpdate: NoAction)
+  portfolios            portfolios            @relation(fields: [portfolio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  investment_positions  investment_positions? @relation(fields: [position_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([portfolio_id, date], map: "idx_investment_movements_portfolio_date")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model investment_positions {
+  id                   BigInt                 @id @default(autoincrement())
+  portfolio_id         BigInt
+  symbol               String                 @db.VarChar(50)
+  name                 String?                @db.VarChar(255)
+  asset_type           String?                @db.VarChar(30)
+  sector               String?                @db.VarChar(100)
+  region               String?                @db.VarChar(100)
+  quantity             Decimal                @default(0) @db.Decimal(18, 6)
+  avg_cost             Decimal?               @db.Decimal(12, 4)
+  invested_amount      Decimal?               @db.Decimal(14, 2)
+  current_price        Decimal?               @db.Decimal(12, 4)
+  current_value        Decimal?               @db.Decimal(14, 2)
+  unrealized_pl_amount Decimal?               @db.Decimal(14, 2)
+  unrealized_pl_pct    Decimal?               @db.Decimal(7, 4)
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime               @default(now()) @db.Timestamptz(6)
+  investment_movements investment_movements[]
+  portfolios           portfolios             @relation(fields: [portfolio_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([portfolio_id, symbol], map: "uq_investment_positions")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model invoice_lines {
+  id           BigInt    @id @default(autoincrement())
+  invoice_id   BigInt
+  service_id   BigInt?
+  description  String
+  quantity     Decimal   @db.Decimal(12, 2)
+  unit         String?   @db.VarChar(30)
+  unit_price   Decimal   @default(0) @db.Decimal(12, 2)
+  vat_rate     Decimal   @default(0) @db.Decimal(5, 2)
+  discount_pct Decimal   @default(0) @db.Decimal(5, 2)
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime  @default(now()) @db.Timestamptz(6)
+  invoices     invoices  @relation(fields: [invoice_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  services     services? @relation(fields: [service_id], references: [id], onUpdate: NoAction)
+
+  @@index([invoice_id], map: "idx_invoice_lines_invoice")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model invoice_payments {
+  id             BigInt        @id @default(autoincrement())
+  invoice_id     BigInt
+  transaction_id BigInt?
+  amount         Decimal       @db.Decimal(12, 2)
+  paid_at        DateTime      @db.Date
+  method         String?       @db.VarChar(30)
+  notes          String?
+  created_at     DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime      @default(now()) @db.Timestamptz(6)
+  invoices       invoices      @relation(fields: [invoice_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  transactions   transactions? @relation(fields: [transaction_id], references: [id], onUpdate: NoAction)
+
+  @@index([invoice_id], map: "idx_invoice_payments_invoice")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model invoices {
+  id                 BigInt             @id @default(autoincrement())
+  business_id        BigInt
+  client_id          BigInt
+  project_id         BigInt?
+  quote_id           BigInt?
+  invoice_number     String             @db.VarChar(50)
+  invoice_date       DateTime           @db.Date
+  due_date           DateTime           @db.Date
+  status             String             @default("draft") @db.VarChar(20)
+  currency           String?            @db.VarChar(10)
+  payment_terms_days Int?               @default(30)
+  subtotal_ht        Decimal            @default(0) @db.Decimal(12, 2)
+  discount_total     Decimal            @default(0) @db.Decimal(12, 2)
+  vat_total          Decimal            @default(0) @db.Decimal(12, 2)
+  total_ht           Decimal            @default(0) @db.Decimal(12, 2)
+  total_ttc          Decimal            @default(0) @db.Decimal(12, 2)
+  amount_paid_cached Decimal            @default(0) @db.Decimal(12, 2)
+  notes              String?
+  created_at         DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime           @default(now()) @db.Timestamptz(6)
+  invoice_lines      invoice_lines[]
+  invoice_payments   invoice_payments[]
+  businesses         businesses         @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  clients            clients            @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  project            Project?           @relation(fields: [project_id], references: [id], onUpdate: NoAction)
+  quotes             quotes?            @relation(fields: [quote_id], references: [id], onUpdate: NoAction)
+  transactions       transactions[]
+
+  @@unique([business_id, invoice_number], map: "uq_invoices")
+  @@index([business_id, client_id], map: "idx_invoices_business_client")
+  @@index([business_id, due_date], map: "idx_invoices_business_due_date")
+  @@index([business_id, status], map: "idx_invoices_business_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model monthly_summary {
+  id               BigInt   @id @default(autoincrement())
+  user_id          BigInt
+  year             Int
+  month            Int
+  total_income     Decimal  @default(0) @db.Decimal(12, 2)
+  total_expense    Decimal  @default(0) @db.Decimal(12, 2)
+  total_saving_in  Decimal  @default(0) @db.Decimal(12, 2)
+  total_saving_out Decimal  @default(0) @db.Decimal(12, 2)
+  net_cashflow     Decimal  @default(0) @db.Decimal(12, 2)
+  net_after_saving Decimal  @default(0) @db.Decimal(12, 2)
+  pct_income_spent Decimal? @db.Decimal(5, 2)
+  pct_income_saved Decimal? @db.Decimal(5, 2)
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime @default(now()) @db.Timestamptz(6)
+  users            users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, year, month], map: "uq_monthly_summary")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model payment_schedules {
+  id             BigInt        @id @default(autoincrement())
+  user_id        BigInt
+  debt_id        BigInt?
+  claim_id       BigInt?
+  date_due       DateTime      @db.Date
+  principal_due  Decimal       @db.Decimal(12, 2)
+  interest_due   Decimal       @default(0) @db.Decimal(12, 2)
+  status         String        @default("pending") @db.VarChar(20)
+  transaction_id BigInt?
+  paid_at        DateTime?     @db.Date
+  created_at     DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime      @default(now()) @db.Timestamptz(6)
+  claims         claims?       @relation(fields: [claim_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  debts          debts?        @relation(fields: [debt_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  transactions   transactions? @relation(fields: [transaction_id], references: [id], onUpdate: NoAction)
+  users          users         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id, date_due], map: "idx_payment_schedules_user_date_due")
+  @@index([user_id, status], map: "idx_payment_schedules_user_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model planned_cashflow {
+  id                     BigInt                   @id @default(autoincrement())
+  user_id                BigInt
+  year                   Int
+  month                  Int
+  scenario               String                   @default("base") @db.VarChar(20)
+  status                 String                   @default("draft") @db.VarChar(20)
+  note                   String?
+  created_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  users                  users                    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  planned_cashflow_lines planned_cashflow_lines[]
+
+  @@unique([user_id, year, month, scenario], map: "uq_planned_cashflow")
+  @@index([user_id, year, month], map: "idx_planned_cashflow_user_date")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model planned_cashflow_lines {
+  id                BigInt           @id @default(autoincrement())
+  plan_id           BigInt
+  category_id       BigInt?
+  category_group_id BigInt?
+  income_source_id  BigInt?
+  direction         String           @db.VarChar(3)
+  type              String?          @db.VarChar(20)
+  label             String?          @db.VarChar(255)
+  amount_planned    Decimal          @db.Decimal(12, 2)
+  created_at        DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime         @default(now()) @db.Timestamptz(6)
+  category_groups   category_groups? @relation(fields: [category_group_id], references: [id], onUpdate: NoAction)
+  categories        categories?      @relation(fields: [category_id], references: [id], onUpdate: NoAction)
+  income_sources    income_sources?  @relation(fields: [income_source_id], references: [id], onUpdate: NoAction)
+  planned_cashflow  planned_cashflow @relation(fields: [plan_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([plan_id, direction], map: "idx_planned_cashflow_lines_plan_direction")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model portfolios {
+  id                      BigInt                 @id @default(autoincrement())
+  user_id                 BigInt
+  name                    String                 @db.VarChar(255)
+  account_id              BigInt?
+  type                    String                 @db.VarChar(30)
+  currency                String                 @db.VarChar(10)
+  goal                    String?                @db.VarChar(50)
+  risk_tolerance_override String?                @db.VarChar(20)
+  created_at              DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime               @default(now()) @db.Timestamptz(6)
+  investment_movements    investment_movements[]
+  investment_positions    investment_positions[]
+  accounts                accounts?              @relation(fields: [account_id], references: [id], onUpdate: NoAction)
+  users                   users                  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model project_service_lines {
+  id                     BigInt            @id @default(autoincrement())
+  project_id             BigInt
+  service_id             BigInt?
+  description            String            @db.VarChar(255)
+  quantity               Decimal           @db.Decimal(12, 2)
+  unit_price             Decimal?          @db.Decimal(12, 2)
+  vat_rate               Decimal?          @db.Decimal(5, 2)
+  discount_pct           Decimal?          @db.Decimal(5, 2)
+  internal_cost_per_unit Decimal?          @db.Decimal(12, 2)
+  created_at             DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime          @default(now()) @db.Timestamptz(6)
+  business_projects      business_projects @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  services               services?         @relation(fields: [service_id], references: [id], onUpdate: NoAction)
+
+  @@index([project_id], map: "idx_project_service_lines_project")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model Project {
+  id                  BigInt           @id @default(autoincrement())
+  user_id             BigInt
+  business_id         BigInt?
+  client_id           BigInt?
+  name                String           @db.VarChar(255)
+  description         String?
+  status              String           @db.VarChar(30)
+  start_date          DateTime?        @db.Date
+  due_date            DateTime?        @db.Date
+  completed_at        DateTime?        @db.Timestamptz(6)
+  budget_amount       Decimal?         @db.Decimal(12, 2)
+  currency            String           @db.VarChar(10)
+  priority            String           @db.VarChar(20)
+  progress_manual_pct Int?
+  progress_auto_mode  String?          @db.VarChar(30)
+  created_at          DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime         @default(now()) @db.Timestamptz(6)
+  user                users            @relation("UserProjects", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  business            businesses?      @relation(fields: [business_id], references: [id], onUpdate: NoAction)
+  client              Client?          @relation(fields: [client_id], references: [id], onUpdate: NoAction)
+  services            ProjectService[]
+  milestones          ProjectMilestone[]
+  tasks               ProjectTask[]
+  transactions        transactions[]   @relation("ProjectTransactions")
+  invoices            invoices[]
+  quotes              quotes[]
+
+  @@index([user_id, business_id], map: "idx_projects_user_business")
+  @@map("projects")
+}
+
+model ProjectService {
+  id           BigInt   @id @default(autoincrement())
+  project_id   BigInt
+  service_id   BigInt
+  quantity     Decimal  @db.Decimal(12, 2)
+  custom_label String?
+  unit_price   Decimal  @db.Decimal(12, 2)
+  total_price  Decimal  @db.Decimal(12, 2)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @default(now()) @db.Timestamptz(6)
+  project      Project  @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  service      Service  @relation(fields: [service_id], references: [id], onUpdate: NoAction)
+
+  @@index([project_id], map: "idx_project_services_project")
+  @@map("project_services")
+}
+
+model ProjectMilestone {
+  id          BigInt   @id @default(autoincrement())
+  project_id  BigInt
+  name        String   @db.VarChar(255)
+  description String?
+  due_date    DateTime? @db.Date
+  status      String   @db.VarChar(30)
+  order_index Int
+  weight_pct  Int?
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @db.Timestamptz(6)
+  project     Project  @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([project_id], map: "idx_project_milestones_project")
+  @@map("project_milestones")
+}
+
+model ProjectTask {
+  id             BigInt   @id @default(autoincrement())
+  project_id     BigInt
+  parent_task_id BigInt?
+  name           String   @db.VarChar(255)
+  description    String?  @db.Text
+  status         String   @db.VarChar(20)
+  start_date     DateTime? @db.Timestamptz(6)
+  due_date       DateTime? @db.Timestamptz(6)
+  completed_at   DateTime? @db.Timestamptz(6)
+  progress_pct   Int      @default(0)
+  sort_index     Int      @default(0)
+  estimated_hours Decimal? @db.Decimal(10, 2)
+  actual_hours    Decimal? @db.Decimal(10, 2)
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime  @default(now()) @db.Timestamptz(6)
+  project        Project   @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  parent_task    ProjectTask? @relation("ProjectTaskParent", fields: [parent_task_id], references: [id])
+  sub_tasks      ProjectTask[] @relation("ProjectTaskParent")
+  dependencies   project_task_dependencies[] @relation("TaskDependencyTask")
+  prerequisites  project_task_dependencies[] @relation("TaskDependencyPrerequisite")
+
+  @@index([project_id], map: "idx_project_tasks_project")
+  @@index([parent_task_id], map: "idx_project_tasks_parent")
+  @@map("project_tasks")
+}
+
+model project_task_dependencies {
+  id          BigInt       @id @default(autoincrement())
+  task_id     BigInt
+  depends_on  BigInt
+
+  task         ProjectTask @relation("TaskDependencyTask", fields: [task_id], references: [id], onDelete: Cascade)
+  prerequisite ProjectTask @relation("TaskDependencyPrerequisite", fields: [depends_on], references: [id], onDelete: Cascade)
+
+  @@index([task_id], map: "idx_task_dep_task")
+  @@index([depends_on], map: "idx_task_dep_depends_on")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model quote_lines {
+  id           BigInt    @id @default(autoincrement())
+  quote_id     BigInt
+  service_id   BigInt?
+  description  String
+  quantity     Decimal   @db.Decimal(12, 2)
+  unit         String?   @db.VarChar(30)
+  unit_price   Decimal   @default(0) @db.Decimal(12, 2)
+  vat_rate     Decimal   @default(0) @db.Decimal(5, 2)
+  discount_pct Decimal   @default(0) @db.Decimal(5, 2)
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime  @default(now()) @db.Timestamptz(6)
+  quotes       quotes    @relation(fields: [quote_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  services     services? @relation(fields: [service_id], references: [id], onUpdate: NoAction)
+
+  @@index([quote_id], map: "idx_quote_lines_quote")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model quotes {
+  id             BigInt    @id @default(autoincrement())
+  business_id    BigInt
+  client_id      BigInt
+  project_id     BigInt?
+  quote_number   String    @db.VarChar(50)
+  issue_date     DateTime  @db.Date
+  valid_until    DateTime? @db.Date
+  status         String    @default("draft") @db.VarChar(20)
+  currency       String?   @db.VarChar(10)
+  subtotal_ht    Decimal   @default(0) @db.Decimal(12, 2)
+  discount_total Decimal   @default(0) @db.Decimal(12, 2)
+  vat_total      Decimal   @default(0) @db.Decimal(12, 2)
+  total_ht       Decimal   @default(0) @db.Decimal(12, 2)
+  total_ttc      Decimal   @default(0) @db.Decimal(12, 2)
+  notes          String?
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime  @default(now()) @db.Timestamptz(6)
+  invoices       invoices[]
+  quote_lines    quote_lines[]
+  businesses     businesses @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  clients        clients    @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  project        Project?   @relation(fields: [project_id], references: [id], onUpdate: NoAction)
+
+  @@unique([business_id, quote_number], map: "uq_quotes")
+  @@index([business_id, client_id], map: "idx_quotes_business_client")
+  @@index([business_id, status], map: "idx_quotes_business_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model recurring_contract_occurrence_transactions {
+  id                             BigInt                         @id @default(autoincrement())
+  occurrence_id                  BigInt
+  transaction_id                 BigInt
+  amount_applied                 Decimal?                       @db.Decimal(12, 2)
+  created_at                     DateTime                       @default(now()) @db.Timestamptz(6)
+  updated_at                     DateTime                       @default(now()) @db.Timestamptz(6)
+  recurring_contract_occurrences recurring_contract_occurrences @relation(fields: [occurrence_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  transactions                   transactions                   @relation(fields: [transaction_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([occurrence_id, transaction_id], map: "uq_recurring_contract_occurrence_tx")
+  @@index([transaction_id], map: "idx_recurring_contract_occurrence_transactions_tx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model recurring_contract_occurrences {
+  id                                         BigInt                                       @id @default(autoincrement())
+  contract_id                                BigInt
+  due_date                                   DateTime                                     @db.Date
+  amount_expected                            Decimal?                                     @db.Decimal(12, 2)
+  amount_paid                                Decimal?                                     @db.Decimal(12, 2)
+  status                                     String                                       @default("pending") @db.VarChar(20)
+  created_at                                 DateTime                                     @default(now()) @db.Timestamptz(6)
+  updated_at                                 DateTime                                     @default(now()) @db.Timestamptz(6)
+  recurring_contract_occurrence_transactions recurring_contract_occurrence_transactions[]
+  recurring_contracts                        recurring_contracts                          @relation(fields: [contract_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([contract_id, due_date], map: "uq_recurring_contract_occurrences")
+  @@index([contract_id, due_date], map: "idx_recurring_contract_occurrences_contract_date")
+  @@index([status], map: "idx_recurring_contract_occurrences_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model recurring_contracts {
+  id                             BigInt                           @id @default(autoincrement())
+  user_id                        BigInt
+  name                           String                           @db.VarChar(255)
+  category_id                    BigInt?
+  account_id                     BigInt?
+  contact_id                     BigInt?
+  amount_expected                Decimal?                         @db.Decimal(12, 2)
+  frequency                      String                           @db.VarChar(30)
+  next_due_date                  DateTime?                        @db.Date
+  start_date                     DateTime?                        @db.Date
+  end_date                       DateTime?                        @db.Date
+  status                         String                           @default("active") @db.VarChar(20)
+  auto_pay                       Boolean                          @default(false)
+  tolerance_pct                  Decimal?                         @db.Decimal(5, 2)
+  notes                          String?
+  created_at                     DateTime                         @default(now()) @db.Timestamptz(6)
+  updated_at                     DateTime                         @default(now()) @db.Timestamptz(6)
+  recurring_contract_occurrences recurring_contract_occurrences[]
+  accounts                       accounts?                        @relation(fields: [account_id], references: [id], onUpdate: NoAction)
+  categories                     categories?                      @relation(fields: [category_id], references: [id], onUpdate: NoAction)
+  contacts                       contacts?                        @relation(fields: [contact_id], references: [id], onUpdate: NoAction)
+  users                          users                            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id, status], map: "idx_recurring_contracts_user_status")
+}
+
+model recurring_series {
+  id                 BigInt         @id @default(autoincrement())
+  user_id            BigInt
+  label              String         @db.VarChar(255)
+  category_id        BigInt?
+  amount_estimated   Decimal?       @db.Decimal(12, 2)
+  frequency          String?        @db.VarChar(30)
+  next_expected_date DateTime?      @db.Date
+  is_active          Boolean        @default(true)
+  created_at         DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime       @default(now()) @db.Timestamptz(6)
+  categories         categories?    @relation(fields: [category_id], references: [id], onUpdate: NoAction)
+  users              users          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  transactions       transactions[]
+
+  @@index([user_id, is_active], map: "idx_recurring_series_user_active")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model savings_goal_allocations {
+  id             BigInt        @id @default(autoincrement())
+  goal_id        BigInt
+  transaction_id BigInt
+  amount         Decimal       @db.Decimal(12, 2)
+  created_at     DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime      @default(now()) @db.Timestamptz(6)
+  savings_goals  savings_goals @relation(fields: [goal_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  transactions   transactions  @relation(fields: [transaction_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([goal_id, transaction_id], map: "uq_savings_goal_allocations")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model savings_goal_progress_monthly {
+  id            BigInt        @id @default(autoincrement())
+  goal_id       BigInt
+  year          Int
+  month         Int
+  amount_saved  Decimal       @default(0) @db.Decimal(12, 2)
+  created_at    DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime      @default(now()) @db.Timestamptz(6)
+  savings_goals savings_goals @relation(fields: [goal_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([goal_id, year, month], map: "uq_savings_goal_progress")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model savings_goals {
+  id                            BigInt                          @id @default(autoincrement())
+  user_id                       BigInt
+  name                          String                          @db.VarChar(255)
+  target_amount                 Decimal                         @db.Decimal(12, 2)
+  target_date                   DateTime?                       @db.Date
+  priority                      String?                         @db.VarChar(20)
+  linked_account_id             BigInt?
+  status                        String                          @default("active") @db.VarChar(20)
+  current_amount_cached         Decimal                         @default(0) @db.Decimal(12, 2)
+  color                         String?                         @db.VarChar(20)
+  emoji                         String?                         @db.VarChar(10)
+  completed_at                  DateTime?                       @db.Date
+  created_at                    DateTime                        @default(now()) @db.Timestamptz(6)
+  updated_at                    DateTime                        @default(now()) @db.Timestamptz(6)
+  savings_goal_allocations      savings_goal_allocations[]
+  savings_goal_progress_monthly savings_goal_progress_monthly[]
+  accounts                      accounts?                       @relation(fields: [linked_account_id], references: [id], onUpdate: NoAction)
+  users                         users                           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id, status], map: "idx_savings_goals_user_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model services {
+  id                    BigInt                  @id @default(autoincrement())
+  business_id           BigInt
+  name                  String                  @db.VarChar(255)
+  type                  String?                 @db.VarChar(30)
+  billing_mode          String                  @db.VarChar(20)
+  description           String?
+  unit_label            String?                 @db.VarChar(30)
+  default_price         Decimal?                @db.Decimal(12, 2)
+  default_vat_rate      Decimal?                @db.Decimal(5, 2)
+  default_internal_cost Decimal?                @db.Decimal(12, 2)
+  is_active             Boolean                 @default(true)
+  created_at            DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                @default(now()) @db.Timestamptz(6)
+  invoice_lines         invoice_lines[]
+  project_service_lines project_service_lines[]
+  quote_lines           quote_lines[]
+  businesses            businesses              @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([business_id, name], map: "uq_services")
+  @@index([business_id, is_active], map: "idx_services_business_active")
+}
+
+model Service {
+  id           BigInt   @id @default(autoincrement())
+  user_id      BigInt
+  business_id  BigInt?
+  name         String   @db.VarChar(255)
+  description  String?
+  unit         String   @db.VarChar(30)
+  unit_price   Decimal  @db.Decimal(12, 2)
+  currency     String   @db.VarChar(10)
+  is_active    Boolean  @default(true)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @default(now()) @db.Timestamptz(6)
+  user         users    @relation("UserProjectServices", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  business     businesses? @relation(fields: [business_id], references: [id], onUpdate: NoAction)
+  projects_services ProjectService[]
+
+  @@index([user_id, business_id], map: "idx_project_services_catalog_user_business")
+  @@map("project_services_catalog")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model suppliers {
+  id              BigInt         @id @default(autoincrement())
+  business_id     BigInt
+  name            String         @db.VarChar(255)
+  contact_name    String?        @db.VarChar(255)
+  email           String?        @db.VarChar(255)
+  phone           String?        @db.VarChar(50)
+  billing_address String?
+  vat_number      String?        @db.VarChar(50)
+  status          String         @default("active") @db.VarChar(20)
+  notes           String?
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime       @default(now()) @db.Timestamptz(6)
+  businesses      businesses     @relation(fields: [business_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  transactions    transactions[]
+
+  @@unique([business_id, name], map: "uq_suppliers")
+  @@index([business_id, status], map: "idx_suppliers_business_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model transaction_rules {
+  id               BigInt          @id @default(autoincrement())
+  user_id          BigInt
+  name             String          @db.VarChar(255)
+  match_field      String          @db.VarChar(30)
+  pattern          String
+  category_id      BigInt?
+  income_source_id BigInt?
+  set_tags         String?
+  priority         Int             @default(0)
+  is_active        Boolean         @default(true)
+  created_at       DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime        @default(now()) @db.Timestamptz(6)
+  categories       categories?     @relation(fields: [category_id], references: [id], onUpdate: NoAction)
+  income_sources   income_sources? @relation(fields: [income_source_id], references: [id], onUpdate: NoAction)
+  users            users           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, name], map: "uq_transaction_rules")
+  @@index([user_id, is_active, priority(sort: Desc)], map: "idx_transaction_rules_user_active_priority")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model transactions {
+  id                                         BigInt                                       @id @default(autoincrement())
+  user_id                                    BigInt
+  business_id                                BigInt?
+  account_id                                 BigInt
+  date                                       DateTime                                     @db.Date
+  amount                                     Decimal                                      @db.Decimal(12, 2)
+  direction                                  String                                       @db.VarChar(3)
+  type                                       String                                       @db.VarChar(30)
+  label                                      String                                       @db.VarChar(255)
+  raw_label                                  String?                                      @db.VarChar(255)
+  category_id                                BigInt?
+  project_id                                 BigInt?
+  contact_id                                 BigInt?
+  income_source_id                           BigInt?
+  invoice_id                                 BigInt?
+  supplier_id                                BigInt?
+  notes                                      String?
+  tags                                       String?
+  is_recurring                               Boolean                                      @default(false)
+  recurring_series_id                        BigInt?
+  import_source                              String?                                      @db.VarChar(50)
+  import_batch_id                            BigInt?
+  created_at                                 DateTime                                     @default(now()) @db.Timestamptz(6)
+  updated_at                                 DateTime                                     @default(now()) @db.Timestamptz(6)
+  investment_movements                       investment_movements[]
+  invoice_payments                           invoice_payments[]
+  payment_schedules                          payment_schedules[]
+  recurring_contract_occurrence_transactions recurring_contract_occurrence_transactions[]
+  savings_goal_allocations                   savings_goal_allocations[]
+  accounts                                   accounts                                     @relation(fields: [account_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  businesses                                 businesses?                                  @relation(fields: [business_id], references: [id], onUpdate: NoAction)
+  categories                                 categories?                                  @relation(fields: [category_id], references: [id], onUpdate: NoAction)
+  contacts                                   contacts?                                    @relation(fields: [contact_id], references: [id], onUpdate: NoAction)
+  import_batches                             import_batches?                              @relation(fields: [import_batch_id], references: [id], onUpdate: NoAction)
+  income_sources                             income_sources?                              @relation(fields: [income_source_id], references: [id], onUpdate: NoAction)
+  invoices                                   invoices?                                    @relation(fields: [invoice_id], references: [id], onUpdate: NoAction)
+  project                                    Project?                                     @relation("ProjectTransactions", fields: [project_id], references: [id], onUpdate: NoAction)
+  recurring_series                           recurring_series?                            @relation(fields: [recurring_series_id], references: [id], onUpdate: NoAction)
+  suppliers                                  suppliers?                                   @relation(fields: [supplier_id], references: [id], onUpdate: NoAction)
+  users                                      users                                        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([business_id, date], map: "idx_transactions_business_date")
+  @@index([invoice_id], map: "idx_transactions_invoice")
+  @@index([supplier_id, date], map: "idx_transactions_supplier_date")
+  @@index([user_id, category_id, date], map: "idx_transactions_user_category_date")
+  @@index([user_id, date], map: "idx_transactions_user_date")
+  @@index([user_id, income_source_id, date], map: "idx_transactions_user_income_source_date")
+  @@index([project_id], map: "idx_transactions_project")
+}
+
+model shared_expenses {
+  id           BigInt                         @id @default(autoincrement())
+  user_id      BigInt
+  label        String                         @db.VarChar(255)
+  total_amount Decimal                        @db.Decimal(12, 2)
+  currency     String                         @db.VarChar(10)
+  date         DateTime                       @db.Date
+  notes        String?
+  created_at   DateTime                       @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime                       @default(now()) @db.Timestamptz(6)
+  users        users                          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  participants shared_expense_participants[]
+  settlements  shared_expense_settlements[]
+
+  @@index([user_id, date], map: "idx_shared_expenses_user_date")
+}
+
+model shared_expense_participants {
+  id                BigInt          @id @default(autoincrement())
+  shared_expense_id BigInt
+  name              String          @db.VarChar(255)
+  email             String?         @db.VarChar(255)
+  share_amount      Decimal         @db.Decimal(12, 2)
+  is_owner          Boolean         @default(false)
+  created_at        DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime        @default(now()) @db.Timestamptz(6)
+  expense           shared_expenses @relation(fields: [shared_expense_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([shared_expense_id], map: "idx_shared_expense_participants_expense")
+}
+
+model shared_expense_settlements {
+  id                BigInt          @id @default(autoincrement())
+  shared_expense_id BigInt
+  from_name         String          @db.VarChar(255)
+  to_name           String          @db.VarChar(255)
+  amount            Decimal         @db.Decimal(12, 2)
+  date              DateTime        @db.Date
+  notes             String?
+  created_at        DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime        @default(now()) @db.Timestamptz(6)
+  expense           shared_expenses @relation(fields: [shared_expense_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([shared_expense_id, date], map: "idx_shared_expense_settlements_expense_date")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model user_settings {
+  user_id            BigInt   @id
+  main_currency      String   @default("EUR") @db.VarChar(10)
+  first_day_of_month Int      @default(1)
+  risk_tolerance     String?  @db.VarChar(20)
+  notification_level String?  @db.VarChar(20)
+  main_goal_type     String?  @db.VarChar(30)
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime @default(now()) @db.Timestamptz(6)
+  users              users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model users {
+  id                           BigInt                         @id @default(autoincrement())
+  email                        String                         @unique @db.VarChar(255)
+  password_hash                String
+  display_name                 String?                        @db.VarChar(255)
+  created_at                   DateTime                       @default(now()) @db.Timestamptz(6)
+  updated_at                   DateTime                       @default(now()) @db.Timestamptz(6)
+  account_daily_balance        account_daily_balance[]
+  accounts                     accounts[]
+  alert_settings               alert_settings[]
+  alerts                       alerts[]
+  attachments                  attachments[]
+  budgets                      budgets[]
+  businesses                   businesses[]
+  cashflow_projections_monthly cashflow_projections_monthly[]
+  categories                   categories[]
+  category_groups              category_groups[]
+  category_monthly_summary     category_monthly_summary[]
+  claims                       claims[]
+  contacts                     contacts[]
+  debts                        debts[]
+  import_batches               import_batches[]
+  income_sources               income_sources[]
+  monthly_summary              monthly_summary[]
+  payment_schedules            payment_schedules[]
+  planned_cashflow             planned_cashflow[]
+  portfolios                   portfolios[]
+  project_clients              Client[]                   @relation("UserProjectClients")
+  projects                     Project[]                  @relation("UserProjects")
+  service_catalog              Service[]                  @relation("UserProjectServices")
+  recurring_contracts          recurring_contracts[]
+  recurring_series             recurring_series[]
+  savings_goals                savings_goals[]
+  transaction_rules            transaction_rules[]
+  transactions                 transactions[]
+  shared_expenses              shared_expenses[]
+  user_settings                user_settings?
+}
