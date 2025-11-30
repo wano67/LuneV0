@@ -13,7 +13,7 @@
     ]
   },
   "deploy": {
-    "preDeployCommand": "npx prisma migrate deploy --schema=./prisma/schema.prisma",
+    "preDeployCommand": "npx prisma migrate deploy --schema=prisma/schema.prisma",
     "startCommand": "node dist/api/server.js",
     "healthcheckPath": "/api/v1/health",
     "healthcheckTimeout": 300,
