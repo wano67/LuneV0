@@ -45,9 +45,8 @@ export class PlannerService {
         where: { project_id: projectId },
         select: {
           id: true,
-          title: true,
+          name: true,
           status: true,
-          priority: true,
           due_date: true,
           created_at: true,
         },
@@ -70,11 +69,11 @@ export class PlannerService {
       project,
       tasks: tasks.map((t) => ({
         id: t.id,
-        title: t.title,
+        title: t.name,
         status: t.status,
         startDate: undefined,
         dueDate: t.due_date ?? undefined,
-        priority: t.priority ?? undefined,
+        priority: undefined,
       })),
       milestones: milestones.map((m) => ({
         id: m.id,
@@ -112,9 +111,8 @@ export class PlannerService {
         select: {
           id: true,
           project_id: true,
-          title: true,
+          name: true,
           status: true,
-          priority: true,
           due_date: true,
         },
       }),
@@ -141,13 +139,19 @@ export class PlannerService {
       }
     >();
 
-    const addTask = (dateStr: string, task: { projectId: bigint; taskId: bigint; title: string; status: string; priority?: string }) => {
+    const addTask = (
+      dateStr: string,
+      task: { projectId: bigint; taskId: bigint; title: string; status: string; priority?: string },
+    ) => {
       const bucket = dayMap.get(dateStr) ?? { tasks: [], milestones: [] };
       bucket.tasks.push(task);
       dayMap.set(dateStr, bucket);
     };
 
-    const addMilestone = (dateStr: string, milestone: { projectId: bigint; milestoneId: bigint; name: string; status: string }) => {
+    const addMilestone = (
+      dateStr: string,
+      milestone: { projectId: bigint; milestoneId: bigint; name: string; status: string },
+    ) => {
       const bucket = dayMap.get(dateStr) ?? { tasks: [], milestones: [] };
       bucket.milestones.push(milestone);
       dayMap.set(dateStr, bucket);
@@ -159,9 +163,9 @@ export class PlannerService {
       addTask(dateStr, {
         projectId: t.project_id,
         taskId: t.id,
-        title: t.title,
+        title: t.name,
         status: t.status,
-        priority: t.priority ?? undefined,
+        priority: undefined,
       });
     }
 
