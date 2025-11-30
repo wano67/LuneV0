@@ -41,22 +41,43 @@ const business_insights_services_1 = require("./routes/business-insights-service
 const business_projects_performance_1 = require("./routes/business-projects-performance");
 const business_insights_pipeline_1 = require("./routes/business-insights-pipeline");
 const personal_overview_1 = require("./routes/personal-overview");
+// Railway injecte automatiquement PORT
 const PORT = Number(process.env.PORT ?? 3001);
 async function buildServer() {
     const app = (0, fastify_1.default)({
         logger: true,
     }).withTypeProvider();
-    // Zod <-> Fastify
+    // Zod ↔ Fastify
     app.setValidatorCompiler(fastify_type_provider_zod_1.validatorCompiler);
     app.setSerializerCompiler(fastify_type_provider_zod_1.serializerCompiler);
-    // Enable CORS explicitly for dev (allow local frontend & common methods)
+    // ----------------------------
+    // 🌍 CORS — compatible local + production
+    // ----------------------------
+    const allowedOrigins = [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        process.env.CORS_ORIGIN, // ex: https://diwanbg.work
+        process.env.NEXT_PUBLIC_APP_URL, // fallback front prod
+    ].filter(Boolean); // retire undefined
     await app.register(cors_1.default, {
-        origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://192.168.1.41:3000'],
+        origin: (origin, cb) => {
+            // Requêtes serveur → API (curl, Railway healthcheck)
+            if (!origin)
+                return cb(null, true);
+            if (allowedOrigins.includes(origin)) {
+                cb(null, true);
+            }
+            else {
+                cb(new Error(`Origin ${origin} not allowed by CORS`), false);
+            }
+        },
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true,
     });
-    // Swagger / OpenAPI (UN SEUL register(swagger))
+    // ----------------------------
+    // 📘 Swagger / OpenAPI
+    // ----------------------------
     await app.register(swagger_1.default, {
         openapi: {
             info: {
@@ -73,99 +94,21 @@ async function buildServer() {
                 },
             },
             security: [{ bearerAuth: [] }],
-            tags: [
-                // Fondations
-                { name: 'Health', description: 'Service uptime and diagnostics' },
-                { name: 'Auth', description: 'Authentication and user session endpoints' },
-                // Espace perso
-                {
-                    name: 'Personal – Accounts',
-                    description: 'Personal cash/bank accounts',
-                },
-                {
-                    name: 'Personal – Transactions',
-                    description: 'Transactions on personal accounts',
-                },
-                {
-                    name: 'Personal – Budgets',
-                    description: 'Budgets on personal cashflow',
-                },
-                {
-                    name: 'Personal – Insights',
-                    description: 'Aggregated KPIs for personal finances',
-                },
-                // Espace business – core
-                {
-                    name: 'Business – Core',
-                    description: 'Business creation, profile and settings',
-                },
-                {
-                    name: 'Business – Clients',
-                    description: 'Clients managed under a business',
-                },
-                {
-                    name: 'Business – Services',
-                    description: 'Catalog of services offered by a business',
-                },
-                {
-                    name: 'Business – Projects',
-                    description: 'Projects tracking for business work',
-                },
-                {
-                    name: 'Business – Project Tasks',
-                    description: 'Tasks and planning items inside business projects',
-                },
-                {
-                    name: 'Business – Project Insights',
-                    description: 'KPIs, planning and progress analytics for projects (overview, gantt, workload)',
-                },
-                // Espace business – sales
-                {
-                    name: 'Business – Quotes',
-                    description: 'Quotes lifecycle (draft, sent, accepted, etc.)',
-                },
-                {
-                    name: 'Business – Invoices',
-                    description: 'Invoices issuance and retrieval',
-                },
-                {
-                    name: 'Business – Payments',
-                    description: 'Payments applied to invoices',
-                },
-                // Espace business – finance
-                {
-                    name: 'Business – Accounts',
-                    description: 'Cash/bank accounts tied to a business',
-                },
-                {
-                    name: 'Business – Transactions',
-                    description: 'Transactions on business accounts',
-                },
-                {
-                    name: 'Business – Budgets',
-                    description: 'Budgets defined at business level',
-                },
-                // Espace business – insights globaux (à venir)
-                {
-                    name: 'Business – Insights',
-                    description: 'Aggregated KPIs for business performance (clients, projects, revenue, etc.)',
-                },
-                {
-                    name: 'Business – Revenue Insights',
-                    description: 'Revenue and profitability analytics by clients, services, etc.',
-                },
-            ],
         },
         transform: fastify_type_provider_zod_1.jsonSchemaTransform,
     });
     await app.register(swagger_ui_1.default, {
         routePrefix: '/docs',
     });
-    // Plugins globaux
+    // ----------------------------
+    // 🔌 Plugins globaux
+    // ----------------------------
     await app.register(error_handler_1.errorHandlerPlugin);
     await app.register(logging_1.loggingPlugin);
     await app.register(auth_1.authPlugin);
-    // Routes
+    // ----------------------------
+    // 🚀 Routes
+    // ----------------------------
     await (0, health_1.registerHealthRoutes)(app);
     await (0, auth_2.registerAuthRoutes)(app);
     await (0, business_1.registerBusinessRoutes)(app);
@@ -173,9 +116,9 @@ async function buildServer() {
     await (0, service_1.registerServiceRoutes)(app);
     await (0, project_1.registerProjectRoutes)(app);
     await (0, project_insights_1.registerProjectInsightsRoutes)(app);
+    await (0, project_task_1.registerProjectTaskRoutes)(app);
     await (0, project_workload_1.registerProjectWorkloadRoutes)(app);
     await (0, project_gantt_1.registerProjectGanttRoutes)(app);
-    await (0, project_task_1.registerProjectTaskRoutes)(app);
     await (0, quote_1.registerQuoteRoutes)(app);
     await (0, invoice_1.registerInvoiceRoutes)(app);
     await app.register(personal_account_1.registerPersonalAccountRoutes, { prefix: '/api/v1' });
@@ -197,12 +140,15 @@ async function buildServer() {
     await app.register(personal_overview_1.registerPersonalOverviewRoutes, { prefix: '/api/v1' });
     return app;
 }
+// ----------------------------
+// ▶️ Launch server
+// ----------------------------
 async function start() {
     const app = await buildServer();
     try {
         await app.listen({ port: PORT, host: '0.0.0.0' });
-        app.log.info(`🚀 API server listening on http://localhost:${PORT}`);
-        app.log.info(`📚 Swagger docs on http://localhost:${PORT}/docs`);
+        app.log.info(`🚀 API live on port ${PORT}`);
+        app.log.info(`📚 Swagger: /docs`);
     }
     catch (err) {
         app.log.error(err);

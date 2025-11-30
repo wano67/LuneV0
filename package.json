@@ -4,12 +4,9 @@
   "private": true,
   "scripts": {
     "dev:api": "ts-node -r tsconfig-paths/register src/api/server.ts",
-
     "prisma:generate": "prisma generate",
     "build": "tsc -p tsconfig.json --outDir dist",
-
-    "start:prod": "npx prisma migrate deploy --schema=prisma/schema.prisma && node -r ./tsconfig-paths-bootstrap.js dist/api/server.js",
-
+    "start:prod": "node dist/api/server.js",
     "test:db": "ts-node -r tsconfig-paths/register src/test/test-db.ts",
     "test:ownership": "ts-node -r tsconfig-paths/register src/test/test-ownership.ts",
     "test:shared": "ts-node -r tsconfig-paths/register src/test/test-shared-expenses.ts",
