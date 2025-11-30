@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "ts-node -r tsconfig-paths/register src/api/server.ts",
     "dev:api": "ts-node -r tsconfig-paths/register src/api/server.ts",
 
+    "prisma:generate": "prisma generate",
     "build": "tsc -p tsconfig.json --outDir dist",
 
-    "start:prod": "npx prisma migrate deploy --schema=prisma/schema.prisma && node dist/api/server.js",
+    "start:prod": "npx prisma migrate deploy --schema=prisma/schema.prisma && node -r ./tsconfig-paths-bootstrap.js dist/api/server.js",
 
     "test:db": "ts-node -r tsconfig-paths/register src/test/test-db.ts",
     "test:ownership": "ts-node -r tsconfig-paths/register src/test/test-ownership.ts",
@@ -33,16 +33,16 @@
     "fastify": "^5.6.2",
     "fastify-type-provider-zod": "^6.1.0",
     "pg": "^8.16.3",
-    "prisma": "^7.0.1",
     "react-hot-toast": "^2.6.0",
+    "tsconfig-paths": "^4.2.0",
     "zod": "^4.1.13"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.10.1",
     "@types/pg": "^8.15.6",
+    "prisma": "^7.0.1",
     "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.6.2"
   }
 }
