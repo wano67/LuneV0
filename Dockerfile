@@ -12,14 +12,14 @@
 FROM node:20 AS backend-build
 WORKDIR /app
 
-# Copy package.json & install dev deps required for build (tsc)
 COPY package.json package-lock.json* tsconfig.json ./
 COPY src ./src
 COPY prisma ./prisma
-RUN npm ci
 
-# Compile TypeScript to /app/dist
-RUN npx tsc --project tsconfig.json --outDir dist
+# Installe tout + génère Prisma Client + compile TS
+RUN npm ci \
+  && npx prisma generate \
+  && npx tsc --project tsconfig.json --outDir dist
 
 
 ########
