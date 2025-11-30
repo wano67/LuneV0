@@ -43,6 +43,7 @@ const business_insights_pipeline_1 = require("./routes/business-insights-pipelin
 const personal_overview_1 = require("./routes/personal-overview");
 // Railway injecte automatiquement PORT
 const PORT = Number(process.env.PORT ?? 3001);
+await app.listen({ port: PORT, host: '0.0.0.0' });
 async function buildServer() {
     const app = (0, fastify_1.default)({
         logger: true,
