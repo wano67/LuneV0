@@ -30,7 +30,11 @@ const navigationMap: Record<SideNavProps["universe"], NavItemConfig[]> = {
     { id: "overview", label: "Overview", href: "/app/business", icon: "overview" },
     { id: "clients", label: "Clients", href: "/app/business/clients", icon: "accounts" },
     { id: "projects", label: "Projects", href: "/app/business/projects", icon: "overview" },
-    { id: "invoices", label: "Billing", href: "/app/business/invoices", icon: "transactions" },
+    { id: "billing", label: "Billing", href: "/app/business/invoices", icon: "transactions" },
+    { id: "quotes", label: "Quotes", href: "/app/business/quotes", icon: "budgets" },
+    { id: "accounts", label: "Accounts", href: "/app/business/accounts", icon: "accounts" },
+    { id: "transactions", label: "Transactions", href: "/app/business/transactions", icon: "transactions" },
+    { id: "budgets", label: "Budgets", href: "/app/business/budgets", icon: "budgets" },
   ],
   performance: [
     { id: "overview", label: "Overview", href: "/app/performance", icon: "overview" },
