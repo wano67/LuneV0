@@ -12,6 +12,7 @@
 FROM node:20 AS backend-build
 WORKDIR /app
 
+# Copie des sources backend + Prisma
 COPY package.json package-lock.json* tsconfig.json ./
 COPY src ./src
 COPY prisma ./prisma
@@ -27,19 +28,19 @@ RUN npm ci \
 FROM node:20-alpine AS backend
 WORKDIR /app
 
-# Production dependencies only
+# Dépendances de production uniquement
 COPY package.json package-lock.json* ./
 RUN npm ci --production
 
-# Copy compiled files and prisma schema (if needed at runtime)
+# Copie des fichiers compilés + Prisma depuis le stage build
 COPY --from=backend-build /app/dist ./dist
-COPY prisma ./prisma
+COPY --from=backend-build /app/prisma ./prisma
 
 ENV NODE_ENV=production
 ENV PORT=3001
 EXPOSE 3001
 
-# Run the compiled server entry
+# Entrypoint backend (Railway utilisera npm run start:prod)
 CMD ["node", "dist/api/server.js"]
 
 
@@ -48,14 +49,14 @@ CMD ["node", "dist/api/server.js"]
 FROM node:20 AS web-build
 WORKDIR /app/web
 
-# Copy frontend package and install build deps
+# Copie du frontend et installation des deps de build
 COPY apps/web/package.json apps/web/package-lock.json* ./
 COPY apps/web/tsconfig.json ./
 COPY apps/web/next.config.js ./
 COPY apps/web ./
 RUN npm ci
 
-# Build the Next.js app
+# Build Next.js
 RUN npm run build
 
 
@@ -64,23 +65,22 @@ RUN npm run build
 FROM node:20-alpine AS web
 WORKDIR /app/web
 
-# Minimal runtime environment
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Install tini for signal handling (optional)
+# tini pour gérer les signaux proprement
 RUN apk add --no-cache tini
 
-# Copy production assets from build stage
+# Assets de build copiés depuis le stage web-build
 COPY --from=web-build /app/web/.next ./.next
 COPY --from=web-build /app/web/public ./public
 COPY --from=web-build /app/web/package.json ./package.json
 COPY --from=web-build /app/web/package-lock.json ./package-lock.json
 
-# Install production deps for Next.js (use --omit=dev for npm@9+ compatibility)
+# Dépendances de prod uniquement pour Next.js
 RUN npm ci --omit=dev
 
 EXPOSE 3000
 
-# Start Next.js
+# Démarrage du frontend
 CMD ["/sbin/tini", "--", "npm", "run", "start"]

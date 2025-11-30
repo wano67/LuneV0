@@ -1,6 +1,7 @@
 {
   "name": "lune-backend",
   "version": "1.0.0",
+  "private": true,
   "scripts": {
     "test:db": "ts-node -r tsconfig-paths/register src/test/test-db.ts",
     "test:ownership": "ts-node -r tsconfig-paths/register src/test/test-ownership.ts",
@@ -12,7 +13,9 @@
     "test:project-clients": "ts-node -r tsconfig-paths/register src/test/test-project-clients.ts",
     "test:invoices": "ts-node -r tsconfig-paths/register src/test/test-invoices.ts",
     "test:db:all": "npm run test:db && npm run test:ownership && npm run test:shared && npm run test:quotes && npm run test:forecast && npm run test:planner && npm run test:insights && npm run test:project-clients && npm run test:invoices",
-    "dev:api": "ts-node -r tsconfig-paths/register src/api/server.ts"
+
+    "dev:api": "ts-node -r tsconfig-paths/register src/api/server.ts",
+    "start:prod": "npx prisma migrate deploy --schema=prisma/schema.prisma && node dist/api/server.js"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
