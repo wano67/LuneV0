@@ -22,17 +22,16 @@ RUN npm ci \
   && npx prisma generate \
   && npx tsc --project tsconfig.json --outDir dist
 
-
 ########
 # Final backend image
 FROM node:20-alpine AS backend
 WORKDIR /app
 
-# Dépendances de production uniquement
+# Dépendances de prod uniquement
 COPY package.json package-lock.json* ./
 RUN npm ci --production
 
-# Copie des fichiers compilés + Prisma depuis le stage build
+# Copie du code compilé + Prisma depuis le stage de build
 COPY --from=backend-build /app/dist ./dist
 COPY --from=backend-build /app/prisma ./prisma
 
@@ -40,16 +39,15 @@ ENV NODE_ENV=production
 ENV PORT=3001
 EXPOSE 3001
 
-# Entrypoint backend (Railway utilisera npm run start:prod)
+# (Railway override avec startCommand, mais on garde un CMD par défaut)
 CMD ["node", "dist/api/server.js"]
-
 
 ########
 # Build frontend (Next.js)
 FROM node:20 AS web-build
 WORKDIR /app/web
 
-# Copie du frontend et installation des deps de build
+# Copie du frontend et install
 COPY apps/web/package.json apps/web/package-lock.json* ./
 COPY apps/web/tsconfig.json ./
 COPY apps/web/next.config.js ./
@@ -59,7 +57,6 @@ RUN npm ci
 # Build Next.js
 RUN npm run build
 
-
 ########
 # Final frontend image
 FROM node:20-alpine AS web
@@ -68,19 +65,15 @@ WORKDIR /app/web
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# tini pour gérer les signaux proprement
 RUN apk add --no-cache tini
 
-# Assets de build copiés depuis le stage web-build
 COPY --from=web-build /app/web/.next ./.next
 COPY --from=web-build /app/web/public ./public
 COPY --from=web-build /app/web/package.json ./package.json
 COPY --from=web-build /app/web/package-lock.json ./package-lock.json
 
-# Dépendances de prod uniquement pour Next.js
 RUN npm ci --omit=dev
 
 EXPOSE 3000
 
-# Démarrage du frontend
 CMD ["/sbin/tini", "--", "npm", "run", "start"]
