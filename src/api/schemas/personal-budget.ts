@@ -12,6 +12,9 @@ export const personalBudgetSchema = z.object({
   amount: z.number(),
   periodStart: z.string(),
   periodEnd: z.string(),
+  spent: z.number().optional(),
+  remaining: z.number().optional(),
+  utilizationPct: z.number().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

@@ -13,7 +13,7 @@ import { personalTransactionsService } from '@/modules/personal/personal-transac
 import { normalizeAccountId, normalizeUserId } from '@/modules/shared/ids';
 import { prisma } from '@/lib/prisma';
 
-const toAccountDto = (account: any) => ({
+const toAccountDto = (account: any, balance: number) => ({
   id: account.id.toString(),
   userId: account.user_id.toString(),
   name: account.name,
@@ -22,6 +22,7 @@ const toAccountDto = (account: any) => ({
   isArchived: !account.is_active,
   includeInBudget: account.include_in_budget,
   includeInNetWorth: account.include_in_net_worth,
+  balance,
   createdAt: account.created_at.toISOString(),
   updatedAt: account.updated_at.toISOString(),
 });
@@ -30,6 +31,20 @@ const toAccountDto = (account: any) => ({
 // Si tu as encore "Invalid account type", ouvre account.service.ts
 // et mets ici un des types autorisés (ex: 'cash', 'other', etc.)
 const DEFAULT_PERSONAL_ACCOUNT_TYPE = 'cash';
+
+const computeBalance = async (userId: bigint, accountId: bigint) => {
+  const tx = await prisma.transactions.groupBy({
+    where: { user_id: userId, business_id: null, account_id: accountId },
+    by: ['direction'],
+    _sum: { amount: true },
+  });
+  return tx.reduce((sum, row) => {
+    const amount = Number(row._sum.amount ?? 0);
+    if (row.direction === 'in') return sum + amount;
+    if (row.direction === 'out') return sum - amount;
+    return sum;
+  }, 0);
+};
 
 export async function registerPersonalAccountRoutes(app: FastifyInstance) {
   const server = app.withTypeProvider<ZodTypeProvider>();
@@ -53,7 +68,29 @@ export async function registerPersonalAccountRoutes(app: FastifyInstance) {
       const accounts = await accountService.listPersonalAccountsForUser(userId, {
         includeInactive: true,
       });
-      return reply.send({ data: accounts.map(toAccountDto) });
+
+      const balancesRaw = await prisma.transactions.groupBy({
+        where: {
+          user_id: userId,
+          business_id: null,
+          account_id: { in: accounts.map((a) => a.id) },
+        },
+        by: ['account_id', 'direction'],
+        _sum: { amount: true },
+      });
+
+      const balanceMap = new Map<bigint, number>();
+      for (const row of balancesRaw) {
+        const current = balanceMap.get(row.account_id) ?? 0;
+        const amount = Number(row._sum.amount ?? 0);
+        if (row.direction === 'in') balanceMap.set(row.account_id, current + amount);
+        else if (row.direction === 'out') balanceMap.set(row.account_id, current - amount);
+        else balanceMap.set(row.account_id, current);
+      }
+
+      return reply.send({
+        data: accounts.map((a) => toAccountDto(a, balanceMap.get(a.id) ?? 0)),
+      });
     },
   });
 
@@ -100,7 +137,8 @@ export async function registerPersonalAccountRoutes(app: FastifyInstance) {
         });
       }
 
-      return reply.code(201).send({ data: toAccountDto(account) });
+      const balance = await computeBalance(userId, account.id);
+      return reply.code(201).send({ data: toAccountDto(account, balance) });
     },
   });
 
@@ -126,7 +164,18 @@ export async function registerPersonalAccountRoutes(app: FastifyInstance) {
       if (account.business_id !== null) {
         throw new Error('Account not found');
       }
-      return reply.send({ data: toAccountDto(account) });
+      const tx = await prisma.transactions.groupBy({
+        where: { user_id: userId, business_id: null, account_id: accountId },
+        by: ['direction'],
+        _sum: { amount: true },
+      });
+      const balance = tx.reduce((sum, row) => {
+        const amount = Number(row._sum.amount ?? 0);
+        if (row.direction === 'in') return sum + amount;
+        if (row.direction === 'out') return sum - amount;
+        return sum;
+      }, 0);
+      return reply.send({ data: toAccountDto(account, balance) });
     },
   });
 
@@ -163,7 +212,8 @@ export async function registerPersonalAccountRoutes(app: FastifyInstance) {
       if (updated.business_id !== null) {
         throw new Error('Account not found');
       }
-      return reply.send({ data: toAccountDto(updated) });
+      const balance = await computeBalance(userId, accountId);
+      return reply.send({ data: toAccountDto(updated, balance) });
     },
   });
 

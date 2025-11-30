@@ -779,7 +779,6 @@ ${now.toISOString().slice(0, 10)};Remboursement;200.00`;
     clientId: projectClient.id,
     name: `Project ${timestamp}`,
     description: 'Website redesign',
-    priority: 'high',
     services: [
       { serviceId: brandingService.id, quantity: 1 },
       { serviceId: devDayService.id, quantity: 5 },
@@ -805,7 +804,6 @@ ${now.toISOString().slice(0, 10)};Remboursement;200.00`;
     userId,
     projectId: createdProject.project.id,
     title: 'Plan workshop',
-    priority: 'high',
   });
   const taskB = await projectTaskService.addTask({
     userId,

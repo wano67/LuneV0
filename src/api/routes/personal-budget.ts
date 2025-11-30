@@ -10,23 +10,45 @@ import {
 } from '@/api/schemas/personal-budget';
 import { personalBudgetsService } from '@/modules/personal/personal-budgets.service';
 import { normalizeUserId } from '@/modules/shared/ids';
+import { personalTransactionsService } from '@/modules/personal/personal-transactions.service';
 
 const decimalToNumber = (value: any): number =>
   typeof value === 'number' ? value : value.toNumber();
 
 const parseDateOnly = (value: string) => new Date(`${value}T00:00:00.000Z`);
 
-const toPersonalBudgetDto = (budget: any) => ({
-  id: budget.id.toString(),
-  userId: budget.user_id.toString(),
-  name: budget.name,
-  currency: budget.currency ?? 'EUR',
-  amount: decimalToNumber(budget.total_spending_limit ?? 0),
-  periodStart: budget.start_date?.toISOString() ?? new Date().toISOString(),
-  periodEnd: budget.end_date?.toISOString() ?? new Date().toISOString(),
-  createdAt: budget.created_at.toISOString(),
-  updatedAt: budget.updated_at.toISOString(),
-});
+const toPersonalBudgetDto = (budget: any, spent?: number) => {
+  const amount = decimalToNumber(budget.total_spending_limit ?? 0);
+  const spentValue = spent ?? 0;
+  const remaining = amount - spentValue;
+  const utilizationPct = amount > 0 ? Math.min(100, (spentValue / amount) * 100) : undefined;
+
+  return {
+    id: budget.id.toString(),
+    userId: budget.user_id.toString(),
+    name: budget.name,
+    currency: budget.currency ?? 'EUR',
+    amount,
+    periodStart: budget.start_date?.toISOString() ?? new Date().toISOString(),
+    periodEnd: budget.end_date?.toISOString() ?? new Date().toISOString(),
+    spent: spentValue,
+    remaining,
+    utilizationPct,
+    createdAt: budget.created_at.toISOString(),
+    updatedAt: budget.updated_at.toISOString(),
+  };
+};
+
+async function computeBudgetSpent(userId: bigint, budget: any) {
+  if (!budget.start_date || !budget.end_date) return 0;
+  const txs = await personalTransactionsService.list(userId, {
+    accountId: undefined,
+    dateFrom: budget.start_date,
+    dateTo: budget.end_date,
+    direction: 'out',
+  });
+  return txs.reduce((sum, tx) => sum + Number(tx.amount ?? 0), 0);
+}
 
 export async function registerPersonalBudgetRoutes(app: FastifyInstance) {
   const server = app.withTypeProvider<ZodTypeProvider>();
@@ -45,7 +67,13 @@ export async function registerPersonalBudgetRoutes(app: FastifyInstance) {
     async handler(request, reply) {
       const userId = normalizeUserId(BigInt((request.user as any).id ?? (request.user as any).sub));
       const budgets = await personalBudgetsService.listForUser(userId);
-      return reply.send({ data: budgets.map(toPersonalBudgetDto) });
+      const withSpent = await Promise.all(
+        budgets.map(async (b) => {
+          const spent = await computeBudgetSpent(userId, b);
+          return toPersonalBudgetDto(b, spent);
+        }),
+      );
+      return reply.send({ data: withSpent });
     },
   });
 
@@ -74,7 +102,8 @@ export async function registerPersonalBudgetRoutes(app: FastifyInstance) {
         periodEnd: parseDateOnly(body.periodEnd),
       });
 
-      return reply.code(201).send({ data: toPersonalBudgetDto(budget) });
+      const spent = await computeBudgetSpent(userId, budget);
+      return reply.code(201).send({ data: toPersonalBudgetDto(budget, spent) });
     },
   });
 
@@ -95,7 +124,8 @@ export async function registerPersonalBudgetRoutes(app: FastifyInstance) {
       const budgetId = BigInt(request.params.budgetId);
 
       const budget = await personalBudgetsService.getForUser(budgetId, userId);
-      return reply.send({ data: toPersonalBudgetDto(budget) });
+      const spent = await computeBudgetSpent(userId, budget);
+      return reply.send({ data: toPersonalBudgetDto(budget, spent) });
     },
   });
 
@@ -125,7 +155,8 @@ export async function registerPersonalBudgetRoutes(app: FastifyInstance) {
         periodEnd: body.periodEnd ? parseDateOnly(body.periodEnd) : undefined,
       });
 
-      return reply.send({ data: toPersonalBudgetDto(updated) });
+      const spent = await computeBudgetSpent(userId, updated);
+      return reply.send({ data: toPersonalBudgetDto(updated, spent) });
     },
   });
 

@@ -48,6 +48,7 @@ export interface PersonalAccount {
   isArchived: boolean;
   includeInBudget?: boolean;
   includeInNetWorth?: boolean;
+  balance?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -77,6 +78,26 @@ export interface PersonalBudget {
   periodEnd: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PersonalSavingsPlan {
+  baseCurrency: string;
+  targetAmount: number;
+  targetDate: string;
+  today: string;
+  monthsRemaining: number;
+  daysRemaining: number;
+  estimatedMonthlyIncome: number;
+  estimatedMonthlySpending: number;
+  estimatedSavingsCapacity: number;
+  currentBalance: number;
+  effectiveCurrentSavings: number;
+  requiredMonthlySavings: number;
+  requiredDailySavings: number;
+  requiredSavingsRate: number;
+  status: "on_track" | "stretch" | "unrealistic";
+  notes: string[];
+  generatedAt: string;
 }
 
 export interface PersonalOverviewBudget {

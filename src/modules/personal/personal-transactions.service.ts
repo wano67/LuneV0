@@ -77,7 +77,10 @@ export class PersonalTransactionsService {
     return tx;
   }
 
-  async list(userIdInput: UserId, filters?: { accountId?: AccountId; dateFrom?: Date; dateTo?: Date; direction?: PersonalTransactionDirection }) {
+  async list(
+    userIdInput: UserId,
+    filters?: { accountId?: AccountId; dateFrom?: Date; dateTo?: Date; direction?: PersonalTransactionDirection; category?: string },
+  ) {
     const userId = normalizeUserId(userIdInput);
     await assertUserExists(this.prismaClient, userId);
     const where: Prisma.transactionsWhereInput = {
@@ -94,6 +97,9 @@ export class PersonalTransactionsService {
     }
     if (filters?.direction) {
       where.direction = filters.direction;
+    }
+    if (filters?.category) {
+      where.notes = filters.category;
     }
 
     return this.prismaClient.transactions.findMany({

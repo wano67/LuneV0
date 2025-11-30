@@ -46,12 +46,13 @@ export async function registerPersonalTransactionRoutes(app: FastifyInstance) {
     preHandler: app.authenticate,
     async handler(request, reply) {
       const userId = normalizeUserId(BigInt((request.user as any).id ?? (request.user as any).sub));
-      const { accountId, dateFrom, dateTo, direction } = request.query;
+      const { accountId, dateFrom, dateTo, direction, category } = request.query;
       const txs = await personalTransactionsService.list(userId, {
         accountId: accountId ? normalizeAccountId(BigInt(accountId)) : undefined,
         dateFrom: parseDateOnly(dateFrom),
         dateTo: parseDateOnly(dateTo),
         direction: direction as any,
+        category: category,
       });
       return reply.send({ data: txs.map(toTransactionDto) });
     },

@@ -9,7 +9,7 @@ interface SideNavProps {
   universe: "personal" | "business" | "performance";
 }
 
-type IconType = "overview" | "accounts" | "transactions" | "budgets";
+type IconType = "overview" | "accounts" | "transactions" | "budgets" | "savings";
 
 type NavItemConfig = {
   id: string;
@@ -24,6 +24,7 @@ const navigationMap: Record<SideNavProps["universe"], NavItemConfig[]> = {
     { id: "accounts", label: "Accounts", href: "/app/personal/accounts", icon: "accounts" },
     { id: "transactions", label: "Transactions", href: "/app/personal/transactions", icon: "transactions" },
     { id: "budgets", label: "Budgets", href: "/app/personal/budgets", icon: "budgets" },
+    { id: "savings", label: "Savings", href: "/app/personal/savings", icon: "savings" },
   ],
   business: [
     { id: "overview", label: "Overview", href: "/app/business", icon: "overview" },
@@ -72,6 +73,13 @@ function NavIcon({ type }: { type: IconType }) {
         <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
           <path d="M12 4a8 8 0 1 0 8 8h-8z" />
           <path d="M12 4v8h8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "savings":
+      return (
+        <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+          <path d="M12 3c-3 0-5 2.5-5 5.2 0 3.3 5 8.8 5 8.8s5-5.5 5-8.8C17 5.5 15 3 12 3Z" />
+          <path d="M12 7v3m0 4h.01" strokeLinecap="round" />
         </svg>
       );
   }

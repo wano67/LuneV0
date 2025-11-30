@@ -7,6 +7,9 @@ export const personalAccountSchema = z.object({
   type: z.string().nullable(),
   currency: z.string().nullable(),
   isArchived: z.boolean(),
+  includeInBudget: z.boolean().optional(),
+  includeInNetWorth: z.boolean().optional(),
+  balance: z.number().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

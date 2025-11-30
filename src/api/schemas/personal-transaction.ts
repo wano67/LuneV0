@@ -47,4 +47,5 @@ export const listPersonalTransactionsQuerySchema = z.object({
   dateFrom: dateOnlyStringSchema.optional(),
   dateTo: dateOnlyStringSchema.optional(),
   direction: z.enum(['in', 'out', 'transfer']).optional(),
+  category: z.string().optional(),
 });
