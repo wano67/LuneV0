@@ -4,7 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 
 import { Button, Card, PageHeader } from "@/components/ui";
-import { usePersonalAccounts, usePersonalSavingsPlan } from "@/lib/hooks/usePersonalData";
+import {
+  usePersonalAccounts,
+  usePersonalSavingsPlan,
+} from "@/lib/hooks/usePersonalData";
 import { safeCurrency } from "@/lib/utils/currency";
 
 const formatCurrency = (value: number, currency?: string) =>
@@ -16,11 +19,19 @@ const formatCurrency = (value: number, currency?: string) =>
 
 export default function PersonalSavingsPage() {
   const personalAccounts = usePersonalAccounts?.();
-  const accounts = (personalAccounts?.data ?? []) as any[];
+
+  // Mémoïse la liste de comptes pour éviter le warning react-hooks/exhaustive-deps
+  const accounts = useMemo(
+    () => ((personalAccounts?.data ?? []) as any[]),
+    [personalAccounts?.data],
+  );
 
   const defaultCurrentSavings = useMemo(() => {
     if (!accounts || accounts.length === 0) return 0;
-    return accounts.reduce((sum: number, a: any) => sum + (a.balance ?? 0), 0);
+    return accounts.reduce(
+      (sum: number, a: any) => sum + (a.balance ?? 0),
+      0,
+    );
   }, [accounts]);
 
   const [targetAmount, setTargetAmount] = useState<number | undefined>();
@@ -86,10 +97,8 @@ export default function PersonalSavingsPage() {
       case "on_track":
         return "Tu es dans les clous ✅";
       case "stretch":
-      case "behind":
         return "Tu es en retard sur l’objectif ⚠️";
       case "unrealistic":
-      case "impossible":
         return "Objectif irréaliste avec ta situation actuelle ❌";
       default:
         return plan.data.status;
@@ -118,9 +127,13 @@ export default function PersonalSavingsPage() {
             <label className="block text-xs font-medium">Montant cible</label>
             <input
               type="number"
-              className="w-full border rounded px-2 py-1"
+              className="w-full rounded border px-2 py-1"
               value={targetAmount ?? ""}
-              onChange={(e) => setTargetAmount(e.target.value === "" ? undefined : Number(e.target.value))}
+              onChange={(e) =>
+                setTargetAmount(
+                  e.target.value === "" ? undefined : Number(e.target.value),
+                )
+              }
               placeholder="ex : 3000"
             />
           </div>
@@ -129,18 +142,30 @@ export default function PersonalSavingsPage() {
             <label className="block text-xs font-medium">Date cible</label>
             <input
               type="date"
-              className="w-full border rounded px-2 py-1"
+              className="w-full rounded border px-2 py-1"
               value={targetDate}
               onChange={(e) => setTargetDate(e.target.value)}
             />
-            <div className="flex gap-2 mt-1 text-[11px] text-textMuted flex-wrap">
-              <button type="button" className="underline" onClick={() => applyPresetMonths(3)}>
+            <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-textMuted">
+              <button
+                type="button"
+                className="underline"
+                onClick={() => applyPresetMonths(3)}
+              >
                 +3 mois
               </button>
-              <button type="button" className="underline" onClick={() => applyPresetMonths(6)}>
+              <button
+                type="button"
+                className="underline"
+                onClick={() => applyPresetMonths(6)}
+              >
                 +6 mois
               </button>
-              <button type="button" className="underline" onClick={() => applyPresetMonths(12)}>
+              <button
+                type="button"
+                className="underline"
+                onClick={() => applyPresetMonths(12)}
+              >
                 +12 mois
               </button>
             </div>
@@ -150,48 +175,72 @@ export default function PersonalSavingsPage() {
             <label className="block text-xs font-medium">Épargne actuelle</label>
             <input
               type="number"
-              className="w-full border rounded px-2 py-1"
+              className="w-full rounded border px-2 py-1"
               value={currentSavings ?? ""}
-              onChange={(e) => setCurrentSavings(e.target.value === "" ? undefined : Number(e.target.value))}
+              onChange={(e) =>
+                setCurrentSavings(
+                  e.target.value === "" ? undefined : Number(e.target.value),
+                )
+              }
               placeholder="Ce que tu as déjà de côté"
             />
             {defaultCurrentSavings > 0 && (
               <div className="mt-1 text-[11px] text-textMuted">
-                Suggestion : ≈ {formatCurrency(defaultCurrentSavings, accounts[0]?.currency)}
+                Suggestion : ≈{" "}
+                {formatCurrency(defaultCurrentSavings, accounts[0]?.currency)}
               </div>
             )}
           </div>
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="outline" onClick={resetForm} disabled={plan.loading}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={resetForm}
+            disabled={plan.loading}
+          >
             Réinitialiser
           </Button>
-          <Button type="button" onClick={handleCompute} disabled={plan.loading}>
+          <Button
+            type="button"
+            onClick={handleCompute}
+            disabled={plan.loading}
+          >
             {plan.loading ? "Calcul en cours…" : "Calculer le plan"}
           </Button>
         </div>
 
-        {plan.error && <p className="text-xs text-danger mt-2">{plan.error.message}</p>}
+        {plan.error && (
+          <p className="mt-2 text-xs text-danger">{plan.error.message}</p>
+        )}
       </Card>
 
       {plan.data && (
-        <div className="grid gap-4 md:grid-cols-3 text-sm">
-          <Card className="p-4 space-y-2">
+        <div className="grid gap-4 text-sm md:grid-cols-3">
+          <Card className="space-y-2 p-4">
             <div className="text-xs text-textMuted">Résumé de l’objectif</div>
             <div className="text-xl font-semibold">
-              {formatCurrency(plan.data.targetAmount, plan.data.baseCurrency)}
+              {formatCurrency(
+                plan.data.targetAmount,
+                plan.data.baseCurrency,
+              )}
             </div>
             <div className="text-xs text-textMuted">
-              Objectif au {plan.data.targetDate} • Aujourd&apos;hui : {plan.data.today}
+              Objectif au {plan.data.targetDate} • Aujourd&apos;hui :{" "}
+              {plan.data.today}
             </div>
             <div className="text-xs text-textMuted">
-              Temps restant : {plan.data.monthsRemaining} mois ({plan.data.daysRemaining} jours)
+              Temps restant : {plan.data.monthsRemaining} mois (
+              {plan.data.daysRemaining} jours)
             </div>
             <div className="mt-2 text-xs">
               Épargne actuelle prise en compte :{" "}
               <span className="font-medium">
-                {formatCurrency(plan.data.effectiveCurrentSavings, plan.data.baseCurrency)}
+                {formatCurrency(
+                  plan.data.effectiveCurrentSavings,
+                  plan.data.baseCurrency,
+                )}
               </span>
             </div>
             <div className="mt-2 text-xs">
@@ -200,43 +249,73 @@ export default function PersonalSavingsPage() {
             </div>
           </Card>
 
-          <Card className="p-4 space-y-2">
-            <div className="text-xs text-textMuted">Ce que tu dois mettre de côté</div>
+          <Card className="space-y-2 p-4">
+            <div className="text-xs text-textMuted">
+              Ce que tu dois mettre de côté
+            </div>
             <div className="text-xl font-semibold">
-              {formatCurrency(plan.data.requiredMonthlySavings, plan.data.baseCurrency)} / mois
+              {formatCurrency(
+                plan.data.requiredMonthlySavings,
+                plan.data.baseCurrency,
+              )}{" "}
+              / mois
             </div>
             <div className="text-xs text-textMuted">
               Soit environ{" "}
               <span className="font-medium">
-                {formatCurrency(plan.data.requiredDailySavings, plan.data.baseCurrency)} / jour
+                {formatCurrency(
+                  plan.data.requiredDailySavings,
+                  plan.data.baseCurrency,
+                )}{" "}
+                / jour
               </span>
             </div>
             <div className="mt-3 text-xs">
               Taux d&apos;épargne requis :{" "}
-              <span className="font-medium">{(plan.data.requiredSavingsRate * 100).toFixed(1)}%</span>
+              <span className="font-medium">
+                {(plan.data.requiredSavingsRate * 100).toFixed(1)}%
+              </span>
             </div>
           </Card>
 
-          <Card className="p-4 space-y-2">
-            <div className="text-xs text-textMuted">Ta situation actuelle (estimation)</div>
+          <Card className="space-y-2 p-4">
+            <div className="text-xs text-textMuted">
+              Ta situation actuelle (estimation)
+            </div>
             <div className="text-xs">
               Revenus mensuels estimés :{" "}
-              <span className="font-medium">{formatCurrency(plan.data.estimatedMonthlyIncome, plan.data.baseCurrency)}</span>
+              <span className="font-medium">
+                {formatCurrency(
+                  plan.data.estimatedMonthlyIncome,
+                  plan.data.baseCurrency,
+                )}
+              </span>
             </div>
             <div className="text-xs">
               Dépenses mensuelles estimées :{" "}
               <span className="font-medium">
-                {formatCurrency(plan.data.estimatedMonthlySpending, plan.data.baseCurrency)}
+                {formatCurrency(
+                  plan.data.estimatedMonthlySpending,
+                  plan.data.baseCurrency,
+                )}
               </span>
             </div>
             <div className="text-xs">
               Capacité d&apos;épargne estimée :{" "}
               <span className="font-medium">
-                {formatCurrency(plan.data.estimatedSavingsCapacity, plan.data.baseCurrency)} / mois
+                {formatCurrency(
+                  plan.data.estimatedSavingsCapacity,
+                  plan.data.baseCurrency,
+                )}{" "}
+                / mois
               </span>
             </div>
             <div className="mt-2 text-xs text-textMuted">
-              Solde actuel pris en compte : {formatCurrency(plan.data.currentBalance, plan.data.baseCurrency)}
+              Solde actuel pris en compte :{" "}
+              {formatCurrency(
+                plan.data.currentBalance,
+                plan.data.baseCurrency,
+              )}
             </div>
           </Card>
         </div>
@@ -244,20 +323,23 @@ export default function PersonalSavingsPage() {
 
       {plan.data?.notes?.length ? (
         <Card className="p-4 text-sm">
-          <div className="font-medium mb-2">Recommandations personnalisées</div>
-          <ul className="list-disc pl-4 space-y-1 text-xs text-textMuted">
+          <div className="mb-2 font-medium">Recommandations personnalisées</div>
+          <ul className="space-y-1 list-disc pl-4 text-xs text-textMuted">
             {plan.data.notes.map((n, idx) => (
               <li key={idx}>{n}</li>
             ))}
           </ul>
-          <div className="mt-3 text-[11px] text-textMuted">Plan généré le {plan.data.generatedAt}.</div>
+          <div className="mt-3 text-[11px] text-textMuted">
+            Plan généré le {plan.data.generatedAt}.
+          </div>
         </Card>
       ) : null}
 
       {!plan.data && !plan.loading && (
         <Card className="p-4 text-xs text-textMuted">
-          Renseigne un objectif et une date, puis clique sur <span className="font-semibold">“Calculer le plan”</span> pour
-          obtenir un rythme d’épargne mensuel réaliste.
+          Renseigne un objectif et une date, puis clique sur{" "}
+          <span className="font-semibold">“Calculer le plan”</span> pour obtenir
+          un rythme d’épargne mensuel réaliste.
         </Card>
       )}
     </div>

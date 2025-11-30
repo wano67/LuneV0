@@ -81,6 +81,13 @@ export default function PersonalBudgetsPage() {
     setDialogOpen(true);
   };
 
+  const handleCloseDialog = () => {
+    if (submitting) return;
+    setDialogOpen(false);
+    setEditingId(null);
+    setFormError(null);
+  };
+
   const handleSubmit = async () => {
     if (!name.trim()) {
       setFormError("Le nom du budget est obligatoire.");
@@ -109,10 +116,13 @@ export default function PersonalBudgetsPage() {
         toast.success("Budget mis à jour");
       }
 
-      setDialogOpen(false);
+      handleCloseDialog();
       await reload();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Impossible de sauvegarder le budget";
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Impossible de sauvegarder le budget";
       setFormError(msg);
       toast.error(msg);
     } finally {
@@ -127,7 +137,10 @@ export default function PersonalBudgetsPage() {
       toast.success("Budget supprimé");
       await reload();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Erreur lors de la suppression";
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Erreur lors de la suppression";
       toast.error(msg);
     }
   };
@@ -137,20 +150,20 @@ export default function PersonalBudgetsPage() {
       <PageHeader
         title="Budgets personnels"
         description="Planifie tes dépenses et suis leur exécution."
-        actions={
+        action={
           <div className="flex gap-2">
             <Button onClick={openNewDialog}>+ Nouveau budget</Button>
             <Link href="/app/personal">
-              <Button variant="outline">Retour à l’overview</Button>
+              <Button variant="outline" size="sm">
+                Retour overview
+              </Button>
             </Link>
           </div>
         }
       />
 
       {error && (
-        <Card className="p-4 text-sm text-danger">
-          {error.message}
-        </Card>
+        <Card className="p-4 text-sm text-danger">{error.message}</Card>
       )}
 
       <div className="grid gap-4 md:grid-cols-3 text-sm">
@@ -160,45 +173,73 @@ export default function PersonalBudgetsPage() {
         </Card>
         <Card className="p-4">
           <div className="text-xs text-textMuted">Montant total budgeté</div>
-          <div className="text-2xl mt-1">{formatCurrency(totals.totalAmount, budgetsList[0]?.currency)}</div>
+          <div className="text-2xl mt-1">
+            {formatCurrency(
+              totals.totalAmount,
+              budgetsList[0]?.currency ?? "EUR"
+            )}
+          </div>
         </Card>
         <Card className="p-4">
           <div className="text-xs text-textMuted">Période par défaut</div>
-          <div className="text-sm mt-1 text-textMuted">Mois courant pour les nouveaux budgets</div>
+          <div className="text-sm mt-1 text-textMuted">
+            Mois courant pour les nouveaux budgets
+          </div>
         </Card>
       </div>
 
       {loading ? (
-        <Card className="p-4 text-sm text-textMuted">Chargement des budgets...</Card>
+        <Card className="p-4 text-sm text-textMuted">
+          Chargement des budgets...
+        </Card>
       ) : budgetsList.length === 0 ? (
         <Card className="p-4 text-sm text-textMuted space-y-2">
           <p>Tu n’as pas encore créé de budget.</p>
-          <p>Crée un budget mensuel (ex : “Novembre – Vie courante”) pour suivre tes dépenses par rapport à un plafond.</p>
+          <p>
+            Crée un budget mensuel (ex : “Novembre – Vie courante”) pour suivre
+            tes dépenses par rapport à un plafond.
+          </p>
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {budgetsList.map((b) => {
-            const periodLabel = `${b.periodStart.slice(0, 10)} → ${b.periodEnd.slice(0, 10)}`;
+            const periodLabel = `${b.periodStart.slice(
+              0,
+              10
+            )} → ${b.periodEnd.slice(0, 10)}`;
             const spent = (b as any).spent ?? 0;
             const utilizationPct =
-              (b as any).utilizationPct ?? (b.amount > 0 ? Math.min(120, (spent / b.amount) * 100) : 0);
+              (b as any).utilizationPct ??
+              (b.amount > 0
+                ? Math.min(120, (spent / b.amount) * 100)
+                : 0);
             const remaining = (b as any).remaining ?? b.amount - spent;
             const over = utilizationPct > 100 || remaining < 0;
             const remainingLabel =
               remaining >= 0
                 ? `${formatCurrency(remaining, b.currency)} restant`
-                : `${formatCurrency(Math.abs(remaining), b.currency)} au-dessus du budget`;
+                : `${formatCurrency(
+                    Math.abs(remaining),
+                    b.currency
+                  )} au-dessus du budget`;
 
             return (
-              <Card key={b.id} className="p-4 text-sm flex flex-col gap-3">
+              <Card
+                key={b.id}
+                className="p-4 text-sm flex flex-col gap-3"
+              >
                 <div className="flex justify-between items-start gap-2">
                   <div>
                     <div className="font-medium">{b.name}</div>
-                    <div className="text-xs text-textMuted">{periodLabel}</div>
+                    <div className="text-xs text-textMuted">
+                      {periodLabel}
+                    </div>
                   </div>
                   <div className="text-right text-xs">
                     <div className="text-textMuted">Limite</div>
-                    <div className="font-semibold">{formatCurrency(b.amount, b.currency)}</div>
+                    <div className="font-semibold">
+                      {formatCurrency(b.amount, b.currency)}
+                    </div>
                   </div>
                 </div>
 
@@ -209,13 +250,21 @@ export default function PersonalBudgetsPage() {
                   </div>
                   <div className="h-2 bg-surfaceAlt rounded-full overflow-hidden">
                     <div
-                      className={`h-full ${over ? "bg-danger" : "bg-primary"}`}
+                      className={`h-full ${
+                        over ? "bg-danger" : "bg-primary"
+                      }`}
                       style={{ width: `${utilizationPct}%` }}
                     />
                   </div>
                   <div className="flex justify-between text-xs">
                     <span>{remainingLabel}</span>
-                    <span className={over ? "text-danger font-medium" : ""}>{utilizationPct.toFixed(1)}%</span>
+                    <span
+                      className={
+                        over ? "text-danger font-medium" : ""
+                      }
+                    >
+                      {utilizationPct.toFixed(1)}%
+                    </span>
                   </div>
                 </div>
 
@@ -233,10 +282,19 @@ export default function PersonalBudgetsPage() {
                     Voir les transactions →
                   </Link>
                   <div className="flex gap-2">
-                    <Button size="xs" variant="outline" onClick={() => openEditDialog(b)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openEditDialog(b)}
+                    >
                       Modifier
                     </Button>
-                    <Button size="xs" variant="ghost" className="text-danger" onClick={() => handleDelete(b.id)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-danger"
+                      onClick={() => handleDelete(b.id)}
+                    >
                       Supprimer
                     </Button>
                   </div>
@@ -249,20 +307,16 @@ export default function PersonalBudgetsPage() {
 
       <Dialog
         open={dialogOpen}
-        onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open) {
-            setEditingId(null);
-            setFormError(null);
-          }
-        }}
+        onClose={handleCloseDialog}
         title={mode === "new" ? "Nouveau budget" : "Modifier le budget"}
       >
         <div className="space-y-4 text-sm">
           {formError && <p className="text-danger">{formError}</p>}
 
           <div className="space-y-1">
-            <label className="block text-xs font-medium">Nom du budget</label>
+            <label className="block text-xs font-medium">
+              Nom du budget
+            </label>
             <input
               className="w-full border rounded px-2 py-1"
               value={name}
@@ -273,27 +327,41 @@ export default function PersonalBudgetsPage() {
 
           <div className="flex gap-3">
             <div className="flex-1 space-y-1">
-              <label className="block text-xs font-medium">Montant</label>
+              <label className="block text-xs font-medium">
+                Montant
+              </label>
               <input
                 type="number"
                 className="w-full border rounded px-2 py-1"
                 value={amount ?? ""}
-                onChange={(e) => setAmount(e.target.value === "" ? undefined : Number(e.target.value))}
+                onChange={(e) =>
+                  setAmount(
+                    e.target.value === ""
+                      ? undefined
+                      : Number(e.target.value)
+                  )
+                }
               />
             </div>
             <div className="w-24 space-y-1">
-              <label className="block text-xs font-medium">Devise</label>
+              <label className="block text-xs font-medium">
+                Devise
+              </label>
               <input
                 className="w-full border rounded px-2 py-1"
                 value={currency}
-                onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+                onChange={(e) =>
+                  setCurrency(e.target.value.toUpperCase())
+                }
               />
             </div>
           </div>
 
           <div className="flex gap-3">
             <div className="flex-1 space-y-1">
-              <label className="block text-xs font-medium">Du</label>
+              <label className="block text-xs font-medium">
+                Du
+              </label>
               <input
                 type="date"
                 className="w-full border rounded px-2 py-1"
@@ -302,7 +370,9 @@ export default function PersonalBudgetsPage() {
               />
             </div>
             <div className="flex-1 space-y-1">
-              <label className="block text-xs font-medium">Au</label>
+              <label className="block text-xs font-medium">
+                Au
+              </label>
               <input
                 type="date"
                 className="w-full border rounded px-2 py-1"
@@ -313,7 +383,11 @@ export default function PersonalBudgetsPage() {
           </div>
 
           <div className="flex justify-between text-xs text-textMuted">
-            <button type="button" onClick={resetFormToCurrentMonth} className="underline">
+            <button
+              type="button"
+              onClick={resetFormToCurrentMonth}
+              className="underline"
+            >
               Utiliser le mois courant
             </button>
           </div>
@@ -321,15 +395,17 @@ export default function PersonalBudgetsPage() {
           <div className="flex justify-end gap-2 pt-2">
             <Button
               variant="ghost"
-              onClick={() => {
-                if (!submitting) setDialogOpen(false);
-              }}
+              onClick={handleCloseDialog}
               disabled={submitting}
             >
               Annuler
             </Button>
             <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting ? "Enregistrement..." : mode === "new" ? "Créer le budget" : "Enregistrer"}
+              {submitting
+                ? "Enregistrement..."
+                : mode === "new"
+                ? "Créer le budget"
+                : "Enregistrer"}
             </Button>
           </div>
         </div>

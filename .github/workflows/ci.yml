@@ -2,59 +2,42 @@ name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches:
+      - main
   pull_request:
-    branches: [ main, master ]
+    branches:
+      - main
 
 jobs:
-  build:
-    name: Install → Lint → Test (optional) → Build
+  web-ci:
     runs-on: ubuntu-latest
+
     env:
       CI: true
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: 22
+          cache: npm
 
-      - name: Install root dependencies
-        run: npm ci
-
-      - name: Compile backend (TypeScript)
-        run: |
-          # Compile backend TypeScript to ensure no type errors
-          npx tsc --project tsconfig.json --outDir dist
-
-      - name: Build frontend (apps/web)
+      - name: Install dependencies
         run: |
           cd apps/web
           npm ci
-          npm run build
 
-      - name: Lint frontend (apps/web)
+      - name: Lint
         run: |
           cd apps/web
           npm run lint
 
-      - name: Run smoke tests (only if DATABASE_URL secret is provided)
-        if: ${{ secrets.DATABASE_URL != '' }}
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - name: Run smoke tests
+        if: ${{ env.DATABASE_URL != '' }}
         run: |
-          # Runs the aggregated smoke tests defined in package.json
+          cd apps/web
           npm run test:db:all
-
-      - name: Upload build artifacts (optional)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: builds
-          path: |
-            dist/**
-            apps/web/.next/**

@@ -1,6 +1,7 @@
 'use client';
 
-import { useApiResource } from './useApiResource';
+import { useCallback, useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api/http";
 
 export type Invoice = {
   id: string;
@@ -43,13 +44,46 @@ export type InvoiceWithItems = {
   items: InvoiceItem[];
 };
 
+type ApiResponse<T> = {
+  data: T;
+};
+
 export function useBusinessInvoices(businessId?: string | null) {
-  const url = businessId ? `/api/v1/businesses/${businessId}/invoices` : null;
-  const { data, loading, error, reload } =
-    useApiResource<InvoiceWithItems[]>(url);
+  const [data, setData] = useState<InvoiceWithItems[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const reload = useCallback(async () => {
+    if (!businessId) {
+      setData([]);
+      setError(null);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await apiFetch<ApiResponse<InvoiceWithItems[]>>(
+        `/businesses/${businessId}/invoices`,
+        { method: "GET", auth: true }
+      );
+      setData(res.data ?? []);
+    } catch (err) {
+      const e = err instanceof Error ? err : new Error("Failed to load invoices");
+      setError(e);
+    } finally {
+      setLoading(false);
+    }
+  }, [businessId]);
+
+  useEffect(() => {
+    if (!businessId) return;
+    void reload();
+  }, [businessId, reload]);
 
   return {
-    data: data ?? [],
+    data,
     loading,
     error,
     reload,
