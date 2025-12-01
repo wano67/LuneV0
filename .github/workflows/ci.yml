@@ -43,8 +43,8 @@ jobs:
           cd apps/web
           npm run lint
 
-      - name: Run smoke tests (only if DATABASE_URL secret is provided)
-        if: ${{ secrets.DATABASE_URL != '' }}
+      - name: Run smoke tests (only if DATABASE_URL is provided)
+        if: ${{ env.DATABASE_URL != '' }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |

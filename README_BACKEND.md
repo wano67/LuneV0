@@ -17,7 +17,11 @@ Déploiement Railway (service backend)
 - Variables requises sur Railway :
   - `PORT=3001` (Railway le fournit)
   - `DATABASE_URL` (connexion Postgres Railway)
-  - (optionnel) `CORS_ORIGIN`, `NEXT_PUBLIC_APP_URL` pour le front.
+  - `NODE_ENV=production`
+  - `JWT_SECRET` (secret de prod)
+  - `CORS_ORIGIN` = URL publique du front (ex: `https://diwanbg.work`)
+  - (optionnel) `NEXT_PUBLIC_APP_URL` si utilisé côté backend
+  - Ne jamais utiliser une URL `localhost` en production (`DATABASE_URL` doit venir de Railway ou d’une base accessible publiquement).
 - La racine contient un `package.json` avec `start:prod` (et `start` -> `start:prod`) utilisé en local; le Dockerfile copie ce `package.json` dans l’image backend.
 
 Notes front
@@ -35,3 +39,10 @@ Local Docker (docker compose)
   `curl http://localhost:3002/api/v1/health`  
   `curl http://localhost:3002/api/v1/health/db`
 - Front Next.js sur `http://localhost:3001` (mapping 3001:3000). Assurez-vous que `NEXT_PUBLIC_API_BASE_URL` côté front pointe vers `http://localhost:3002`.
+
+Production Railway (frontend)
+-----------------------------
+- Service frontend : définir
+  - `NEXT_PUBLIC_API_BASE_URL` → URL publique du backend (ex: `https://<backend-railway-domain>`)
+  - `NEXT_PUBLIC_APP_URL` → URL publique du front (ex: `https://diwanbg.work`)
+  - Pas d’URL `localhost` en production.
