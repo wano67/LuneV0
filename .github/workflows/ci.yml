@@ -2,39 +2,33 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
-    # On met les variables d'env "globales" au job ici
-    env:
-      # Si tu définis DATABASE_URL dans les "Actions secrets" de GitHub,
-      # elle sera disponible pour les tests. Sinon, ce sera une string vide.
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Use Node.js 20
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      - name: Install root dependencies
+      - name: Install dependencies
         run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
 
       - name: Compile backend (TypeScript)
         run: |
-          # Compile le backend pour vérifier qu'il n'y a pas d'erreurs TS
-          npx tsc --project tsconfig.json --outDir dist
+          npx tsc --project tsconfig.build.json --outDir dist
 
       - name: Build frontend (apps/web)
         run: |
@@ -48,11 +42,10 @@ jobs:
           npm run lint
 
       - name: Run smoke tests (only if DATABASE_URL secret is provided)
-        # Ici on ne touche plus au contexte secrets directement,
-        # on utilise la variable d'env définie plus haut
-        if: ${{ env.DATABASE_URL != '' }}
+        if: ${{ secrets.DATABASE_URL != '' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          # Lance les tests agrégés définis dans package.json
           npm run test:db:all
 
       - name: Upload build artifacts (optional)
