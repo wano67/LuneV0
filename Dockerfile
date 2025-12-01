@@ -34,13 +34,14 @@ RUN npm ci --production
 # Copie du code compilé + Prisma depuis le stage de build
 COPY --from=backend-build /app/dist ./dist
 COPY --from=backend-build /app/prisma ./prisma
+COPY tsconfig-paths-bootstrap.js ./tsconfig-paths-bootstrap.js
 
 ENV NODE_ENV=production
 ENV PORT=3001
 EXPOSE 3001
 
 # (Railway override avec startCommand, mais on garde un CMD par défaut)
-CMD ["node", "dist/api/server.js"]
+CMD ["node", "-r", "./tsconfig-paths-bootstrap.js", "dist/api/server.js"]
 
 ########
 # Build frontend (Next.js)
