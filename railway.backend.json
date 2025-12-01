@@ -14,7 +14,7 @@
     ]
   },
   "deploy": {
-    "startCommand": "npm run start:prod",
+    "startCommand": null,
     "healthcheckPath": "/api/v1/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",

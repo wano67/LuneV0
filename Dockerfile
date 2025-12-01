@@ -12,6 +12,9 @@
 FROM node:20 AS backend-build
 WORKDIR /app
 
+ARG DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
+ENV DATABASE_URL=${DATABASE_URL}
+
 # Copie des sources backend + Prisma
 COPY package.json package-lock.json* tsconfig.json ./
 COPY src ./src

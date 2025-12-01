@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "start": "npm run start:prod",
+    "build": "tsc -p tsconfig.json --outDir dist",
     "dev:api": "ts-node -r tsconfig-paths/register src/api/server.ts",
     "prisma:generate": "prisma generate",
-    "build": "tsc -p tsconfig.json --outDir dist",
     "start:prod": "node -r ./tsconfig-paths-bootstrap.js dist/api/server.js",
     "test:db": "ts-node -r tsconfig-paths/register src/test/test-db.ts",
     "test:ownership": "ts-node -r tsconfig-paths/register src/test/test-ownership.ts",

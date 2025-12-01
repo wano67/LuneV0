@@ -60,6 +60,14 @@ export async function buildServer() {
     logger: true,
   }).withTypeProvider<ZodTypeProvider>();
 
+  app.log.info(
+    {
+      datasource: 'postgresql',
+      hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
+    },
+    'Prisma datasource configuration',
+  );
+
   // Zod ↔ Fastify
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);

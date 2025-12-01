@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: lune_dev
+      POSTGRES_DB: lunev0
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     # If host 5432 is already used, map to 5433 to avoid conflicts
@@ -21,7 +21,7 @@ services:
       - ./:/app:cached
       - /app/node_modules
     environment:
-      DATABASE_URL: postgres://postgres:password@db:5432/lune_dev
+      DATABASE_URL: postgres://postgres:password@db:5432/lunev0
       NODE_ENV: development
       PORT: 3001
     # Use 3002 on host to reduce chance of local port conflicts
