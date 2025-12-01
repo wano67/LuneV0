@@ -1,20 +1,13 @@
 const path = require('path');
 const tsConfigPaths = require('tsconfig-paths');
-const tsConfig = require('./tsconfig.json');
 
-const tsconfigPaths = tsConfig?.compilerOptions?.paths || {};
-
-// On mappe les alias TS vers le code compilé dans dist/
+// Minimal runtime alias mapping for compiled code in dist/; no need to read tsconfig.json at runtime.
 const runtimeBaseUrl = path.resolve(__dirname, 'dist');
-
-const runtimePaths = Object.fromEntries(
-  Object.entries(tsconfigPaths).map(([alias, targets]) => [
-    alias,
-    targets.map((target) => target.replace(/^\.?\/?src\//, ''))
-  ])
-);
+const runtimePaths = {
+  '@/*': ['*'],
+};
 
 tsConfigPaths.register({
   baseUrl: runtimeBaseUrl,
-  paths: Object.keys(runtimePaths).length ? runtimePaths : tsconfigPaths
+  paths: runtimePaths,
 });
