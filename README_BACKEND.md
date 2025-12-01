@@ -12,7 +12,7 @@ Commandes locales (prod-like)
 Déploiement Railway (service backend)
 -------------------------------------
 - Fichier : `railway.backend.json` (builder `DOCKERFILE`, target `backend`).
-- Le container utilise le `CMD` du Dockerfile : `node -r ./tsconfig-paths-bootstrap.js dist/api/server.js`.
+- Le container utilise le `CMD` du Dockerfile : `node dist/api/server.js`.
 - `startCommand` est laissé à `null` pour ne pas surcharger le `CMD`.
 - Variables requises sur Railway :
   - `PORT=3001` (Railway le fournit)

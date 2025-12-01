@@ -2,13 +2,19 @@
 import { z } from 'zod';
 
 export const signupBodySchema = z.object({
-  email: z.string().email(),
+  email: z
+    .string()
+    .email()
+    .transform((v) => v.trim().toLowerCase()),
   password: z.string().min(8),
   displayName: z.string().min(1),
 });
 
 export const loginBodySchema = z.object({
-  email: z.string().email(),
+  email: z
+    .string()
+    .email()
+    .transform((v) => v.trim().toLowerCase()),
   password: z.string().min(1),
 });
 

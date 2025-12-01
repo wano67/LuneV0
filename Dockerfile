@@ -33,11 +33,10 @@ RUN npm ci --omit=dev
 COPY --from=backend-build /app/dist ./dist
 COPY --from=backend-build /app/prisma ./prisma
 COPY tsconfig.build.json ./tsconfig.build.json
-COPY tsconfig-paths-bootstrap.js ./tsconfig-paths-bootstrap.js
 
 ENV NODE_ENV=production
 ENV PORT=3001
 EXPOSE 3001
 
 # Fastify backend
-CMD ["node", "-r", "./tsconfig-paths-bootstrap.js", "dist/api/server.js"]
+CMD ["node", "dist/api/server.js"]

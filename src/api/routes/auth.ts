@@ -11,6 +11,7 @@ import {
 } from '@/api/schemas/auth';
 import { userService } from '@/modules/user/user.service';
 import { prisma } from '@/lib/prisma';
+import bcrypt from 'bcryptjs';
 
 export async function registerAuthRoutes(app: FastifyInstance) {
   const server = app.withTypeProvider<ZodTypeProvider>();
@@ -27,11 +28,12 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       },
     },
     async handler(request, reply) {
-      const { email, password, displayName } = request.body;
+      const { email: rawEmail, password, displayName } = request.body;
+      const normalizedEmail = rawEmail.trim().toLowerCase();
 
       // TODO: en prod, hasher le password
       const { user } = await userService.createUserWithDefaultSettings({
-        email,
+        email: normalizedEmail,
         passwordHash: password,
         displayName,
       });
@@ -75,8 +77,17 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         where: { email },
       });
 
-      // TODO: comparer password hash correctement
-      if (!user || user.password_hash !== password) {
+      if (!user) {
+        return reply.code(401).send({
+          error: {
+            code: 'invalid_credentials',
+            message: 'Invalid email or password',
+          },
+        });
+      }
+
+      const isValid = await bcrypt.compare(password, user.password_hash);
+      if (!isValid) {
         return reply.code(401).send({
           error: {
             code: 'invalid_credentials',

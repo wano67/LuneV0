@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "start": "npm run start:prod",
-    "build": "tsc -p tsconfig.json --outDir dist",
+    "build": "tsc -p tsconfig.json --outDir dist && tsc-alias -p tsconfig.json",
     "dev:api": "ts-node -r tsconfig-paths/register src/api/server.ts",
     "prisma:generate": "prisma generate",
-    "start:prod": "node -r ./tsconfig-paths-bootstrap.js dist/api/server.js",
+    "start:prod": "node dist/api/server.js",
+    "seed:create-user": "npm run build && node dist/scripts/createUser.js",
     "test:db": "ts-node -r tsconfig-paths/register src/test/test-db.ts",
     "test:ownership": "ts-node -r tsconfig-paths/register src/test/test-ownership.ts",
     "test:shared": "ts-node -r tsconfig-paths/register src/test/test-shared-expenses.ts",
@@ -27,12 +28,12 @@
     "@fastify/swagger-ui": "^5.2.3",
     "@prisma/adapter-pg": "^7.0.1",
     "@prisma/client": "^7.0.1",
+    "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
     "fastify": "^5.6.2",
     "fastify-type-provider-zod": "^6.1.0",
     "pg": "^8.16.3",
     "react-hot-toast": "^2.6.0",
-    "tsconfig-paths": "^4.2.0",
     "zod": "^4.1.13"
   },
   "devDependencies": {
@@ -41,6 +42,8 @@
     "@types/pg": "^8.15.6",
     "prisma": "^7.0.1",
     "ts-node": "^10.9.2",
+    "tsc-alias": "^1.8.16",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.6.2"
   }
 }

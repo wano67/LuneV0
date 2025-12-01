@@ -1,7 +1,22 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "outDir": "dist",
+
+    /**
+     * IMPORTANT — requis pour tsc-alias
+     */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+
+    /**
+     * SAFE Default overrides for prod build
+     */
     "noImplicitAny": false,
     "strict": false
-  }
+  },
+  "include": ["src", "prisma"],
+  "exclude": ["node_modules", "dist"]
 }
