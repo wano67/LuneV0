@@ -9,35 +9,57 @@ on:
       - main
 
 jobs:
-  web-ci:
+  build:
     runs-on: ubuntu-latest
 
+    # On met les variables d'env "globales" au job ici
     env:
-      CI: true
+      # Si tu définis DATABASE_URL dans les "Actions secrets" de GitHub,
+      # elle sera disponible pour les tests. Sinon, ce sera une string vide.
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
           cache: npm
 
-      - name: Install dependencies
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Compile backend (TypeScript)
+        run: |
+          # Compile le backend pour vérifier qu'il n'y a pas d'erreurs TS
+          npx tsc --project tsconfig.json --outDir dist
+
+      - name: Build frontend (apps/web)
         run: |
           cd apps/web
           npm ci
+          npm run build
 
-      - name: Lint
+      - name: Lint frontend (apps/web)
         run: |
           cd apps/web
           npm run lint
 
-      - name: Run smoke tests
+      - name: Run smoke tests (only if DATABASE_URL secret is provided)
+        # Ici on ne touche plus au contexte secrets directement,
+        # on utilise la variable d'env définie plus haut
         if: ${{ env.DATABASE_URL != '' }}
         run: |
-          cd apps/web
+          # Lance les tests agrégés définis dans package.json
           npm run test:db:all
+
+      - name: Upload build artifacts (optional)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: builds
+          path: |
+            dist/**
+            apps/web/.next/**

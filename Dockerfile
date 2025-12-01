@@ -1,5 +1,5 @@
 ########
-# Multi-stage Dockerfile for Lune v2
+# Multi-stage Dockerfile for Lune
 # Targets:
 #  - backend-build: compiles TypeScript backend
 #  - backend: production backend image (Node 20)
@@ -34,6 +34,7 @@ RUN npm ci --production
 # Copie du code compilé + Prisma depuis le stage de build
 COPY --from=backend-build /app/dist ./dist
 COPY --from=backend-build /app/prisma ./prisma
+COPY tsconfig.json ./tsconfig.json
 COPY tsconfig-paths-bootstrap.js ./tsconfig-paths-bootstrap.js
 
 ENV NODE_ENV=production
