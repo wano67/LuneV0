@@ -45,6 +45,9 @@ const toProjectDto = (project: ProjectSummary) => ({
 export async function registerProjectRoutes(app: FastifyInstance) {
   const server = app.withTypeProvider<ZodTypeProvider>();
 
+  // ----------------------
+  // CREATE PROJECT
+  // ----------------------
   server.route({
     method: 'POST',
     url: '/api/v1/businesses/:businessId/projects',
@@ -62,13 +65,17 @@ export async function registerProjectRoutes(app: FastifyInstance) {
       const userId = BigInt(request.user.id);
       const businessId = normalizeBusinessId(BigInt(request.params.businessId));
 
+      // On convertit proprement le clientId pour éviter le type string | bigint
+      const rawClientId = request.body.clientId;
+      const clientId =
+        rawClientId === undefined || rawClientId === null
+          ? null
+          : normalizeClientId(BigInt(rawClientId));
+
       const project = await projectsService.createProject({
         userId,
         businessId,
-        clientId:
-          request.body.clientId === undefined || request.body.clientId === null
-            ? request.body.clientId ?? null
-            : normalizeClientId(BigInt(request.body.clientId)),
+        clientId,
         name: request.body.name,
         description: request.body.description ?? undefined,
         currency: request.body.currency ?? undefined,
@@ -88,6 +95,9 @@ export async function registerProjectRoutes(app: FastifyInstance) {
     },
   });
 
+  // ----------------------
+  // LIST PROJECTS FOR BUSINESS
+  // ----------------------
   server.route({
     method: 'GET',
     url: '/api/v1/businesses/:businessId/projects',
@@ -110,6 +120,9 @@ export async function registerProjectRoutes(app: FastifyInstance) {
     },
   });
 
+  // ----------------------
+  // GET PROJECT BY ID
+  // ----------------------
   server.route({
     method: 'GET',
     url: '/api/v1/projects/:projectId',
@@ -132,6 +145,9 @@ export async function registerProjectRoutes(app: FastifyInstance) {
     },
   });
 
+  // ----------------------
+  // UPDATE PROJECT
+  // ----------------------
   server.route({
     method: 'PATCH',
     url: '/api/v1/projects/:projectId',
@@ -150,6 +166,18 @@ export async function registerProjectRoutes(app: FastifyInstance) {
       const projectId = normalizeProjectId(BigInt(request.params.projectId));
       const body = request.body;
 
+      // Ici on distingue bien :
+      // - undefined -> ne pas toucher au clientId
+      // - null -> effacer le clientId
+      // - string -> convertir en ClientId via normalizeClientId(BigInt(...))
+      const rawClientId = body.clientId;
+      const clientIdForUpdate =
+        rawClientId === undefined
+          ? undefined
+          : rawClientId === null
+          ? null
+          : normalizeClientId(BigInt(rawClientId));
+
       const updated = await projectsService.updateProject(projectId, userId, {
         name: body.name,
         description: body.description,
@@ -162,16 +190,16 @@ export async function registerProjectRoutes(app: FastifyInstance) {
         priority: body.priority as any,
         progressManualPct: body.progressManualPct === undefined ? undefined : body.progressManualPct,
         progressAutoMode: body.progressAutoMode as any,
-        clientId:
-          body.clientId === undefined || body.clientId === null
-            ? body.clientId ?? undefined
-            : normalizeClientId(BigInt(body.clientId)),
+        clientId: clientIdForUpdate,
       });
 
       return reply.send({ data: toProjectDto(updated.project) });
     },
   });
 
+  // ----------------------
+  // DELETE PROJECT
+  // ----------------------
   server.route({
     method: 'DELETE',
     url: '/api/v1/projects/:projectId',
