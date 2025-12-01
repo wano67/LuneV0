@@ -20,9 +20,9 @@ RUN npm ci \
   && npx tsc --project tsconfig.build.json --outDir dist
 
 ########
-# Final backend image (prod)
+# Final backend image (prod) - use glibc base to match Prisma client built in backend-build
 ########
-FROM node:20-alpine AS backend
+FROM node:20 AS backend
 WORKDIR /app
 
 # Dépendances de prod uniquement
