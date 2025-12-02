@@ -40,3 +40,44 @@ EXPOSE 3001
 
 # Fastify backend
 CMD ["node", "dist/api/server.js"]
+
+########
+# Build frontend (Next.js)
+########
+FROM node:20 AS web-build
+WORKDIR /app
+
+# Copie du frontend
+COPY apps/web/package.json apps/web/package-lock.json* ./
+
+# Install des dépendances
+RUN npm ci
+
+# Copie du code source
+COPY apps/web ./
+
+# Variables d'environnement nécessaires au build
+ARG NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+
+# Build Next.js (output: standalone)
+RUN npm run build
+
+########
+# Final frontend image (prod) - utilise le mode standalone de Next.js
+########
+FROM node:20-slim AS web
+WORKDIR /app
+
+# Copie le serveur standalone et les assets statiques
+COPY --from=web-build /app/.next/standalone ./
+COPY --from=web-build /app/.next/static ./.next/static
+COPY --from=web-build /app/public ./public
+
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+EXPOSE 3000
+
+# Le serveur standalone est un fichier server.js à la racine
+CMD ["node", "server.js"]

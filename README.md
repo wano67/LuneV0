@@ -2,6 +2,76 @@
 
 Lune v2 is a TypeScript/Prisma backend for personal finance and micro-business operations. It combines personal cash management, small-business invoicing, light CRM, projects, planning, insights, and forecasting in one codebase. This README explains the current backend domains, how they fit together, and how to run the smoke tests.
 
+## 🚀 Quick Start
+
+### Development (Local)
+
+```bash
+# 1. Install dependencies (backend)
+npm install
+
+# 2. Install frontend dependencies
+cd apps/web && npm install && cd ../..
+
+# 3. Copy environment files
+cp .env.example .env
+cp apps/web/.env.example apps/web/.env.local
+
+# 4. Start Postgres (via Docker Compose)
+docker compose up -d db
+
+# 5. Generate Prisma client
+npx prisma generate
+
+# 6. Apply migrations
+npx prisma migrate dev
+
+# 7. Start backend (dev mode)
+npm run dev:api
+
+# 8. Start frontend (in another terminal)
+cd apps/web && npm run dev
+```
+
+### Docker Compose (Full Stack)
+
+```bash
+docker compose up
+```
+- Backend: http://localhost:3002
+- Frontend: http://localhost:3001
+- Postgres: localhost:5433
+
+## 🌐 Railway Deployment
+
+This repository is configured for Railway deployment with separate backend and frontend services.
+
+### Backend Service
+
+1. Create a new Railway project
+2. Add a PostgreSQL database (Railway provisions it automatically)
+3. Connect this repository
+4. Set the config file to `railway.backend.json`
+5. Configure environment variables:
+   - `JWT_SECRET` - A secure random string for JWT signing
+   - `CORS_ORIGIN` - Your frontend Railway URL (e.g., https://your-app-web.up.railway.app)
+   - `DATABASE_URL` - Auto-injected by Railway PostgreSQL
+
+### Frontend Service
+
+1. In the same Railway project, add another service from the same repository
+2. Set the config file to `apps/web/railway.web.json`
+3. Configure environment variables:
+   - `NEXT_PUBLIC_API_BASE_URL` - Your backend Railway URL (e.g., https://your-app-backend.up.railway.app)
+   - `NEXT_PUBLIC_APP_URL` - Your frontend Railway URL
+
+### Custom Domain
+
+Railway allows you to add custom domains to your services:
+1. Go to your service settings
+2. Under "Networking", add your custom domain
+3. Configure your DNS to point to Railway
+
 ## Stack & Conventions
 - **Runtime**: Node.js + TypeScript.
 - **ORM/DB**: Prisma 7 on PostgreSQL (schema in `prisma/schema.prisma`).
@@ -90,6 +160,7 @@ npm run test:db
 
 ## Environment
 - `.env` must define `DATABASE_URL`.
+- See `.env.example` for all available environment variables.
 - Prisma uses the PG adapter with pooled connections; see `src/lib/prisma.ts`.
 
-This README gives you a bird’s-eye view of the current backend: how data is modeled, how services enforce rules, and how to run the smoke tests to validate the system. Use the domain services as the single entry point for business logic.*** End Patch``` This fails because we used lark format. Need not include extra. Remove *** End patch. Use proper apply_patch. Let's redo. Use apply_patch with add file content. Revised.**** Let's run apply_patch. Already deleted README. Need to add file with apply_patch begin add file. Provide content. Remove triple backticks. Let's do. 
+This README gives you a bird's-eye view of the current backend: how data is modeled, how services enforce rules, and how to run the smoke tests to validate the system. Use the domain services as the single entry point for business logic.

@@ -31,10 +31,12 @@ export async function registerAuthRoutes(app: FastifyInstance) {
       const { email: rawEmail, password, displayName } = request.body;
       const normalizedEmail = rawEmail.trim().toLowerCase();
 
-      // TODO: en prod, hasher le password
+      // Hash du password avec bcrypt
+      const passwordHash = await bcrypt.hash(password, 10);
+
       const { user } = await userService.createUserWithDefaultSettings({
         email: normalizedEmail,
-        passwordHash: password,
+        passwordHash,
         displayName,
       });
 
