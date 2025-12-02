@@ -72,6 +72,42 @@ Railway allows you to add custom domains to your services:
 2. Under "Networking", add your custom domain
 3. Configure your DNS to point to Railway
 
+## ☁️ Cloudflare Workers/Pages Deployment
+
+The frontend (Next.js) can be deployed to Cloudflare Pages for edge hosting.
+
+### Prerequisites
+
+- Cloudflare account with Workers/Pages enabled
+- Backend API deployed separately (e.g., Railway, as described above)
+
+### Configuration
+
+1. In Cloudflare Dashboard, create a new Pages project
+2. Connect to your GitHub repository
+3. Configure build settings:
+   - **Build command**: `cd apps/web && npm install && npx @cloudflare/next-on-pages`
+   - **Build output directory**: `apps/web/.vercel/output/static`
+4. Set environment variables:
+   - `NEXT_PUBLIC_API_BASE_URL` - Your backend URL (e.g., https://your-api.railway.app)
+5. In Project Settings > Functions > Compatibility flags, add: `nodejs_compat`
+6. Set Compatibility date to `2024-12-01` or later
+
+### Local Development with Cloudflare
+
+```bash
+cd apps/web
+npm install
+npm run build:cloudflare  # Build for Cloudflare
+npm run preview           # Preview locally with Wrangler
+```
+
+### Important Notes
+
+- The backend API uses Fastify and requires Node.js hosting (Railway, etc.)
+- Only the frontend (apps/web) is compatible with Cloudflare Workers
+- Environment variables for production should be set in Cloudflare Dashboard
+
 ## Stack & Conventions
 - **Runtime**: Node.js + TypeScript.
 - **ORM/DB**: Prisma 7 on PostgreSQL (schema in `prisma/schema.prisma`).

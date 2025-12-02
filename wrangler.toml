@@ -1,0 +1,14 @@
+# Cloudflare Workers/Pages Configuration
+# This project is a monorepo with separate frontend and backend
+# For Cloudflare deployment, use the frontend only (apps/web)
+
+name = "lunework"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# The web app is in apps/web - configure Cloudflare to build from there
+# Build command: cd apps/web && npm install && npx @cloudflare/next-on-pages
+# Output directory: apps/web/.vercel/output/static
+
+# Note: The backend (Fastify) should be deployed separately to Railway or other Node.js hosting
+# See README.md for deployment instructions

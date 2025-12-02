@@ -6,6 +6,9 @@ import "@/styles/globals.css";
 export const metadata: Metadata = {
   title: "Lune",
   description: "Personal & Business Finance Management",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
