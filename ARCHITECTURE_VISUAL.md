@@ -341,36 +341,34 @@ Hook: useBusinessPerformance(businessId)
 
 ---
 
-## Deployment Architecture (Production)
+## Deployment Architecture (Production - Railway)
 
 ```
 ┌────────────────────────────────────────────┐
-│        CDN (Vercel / Netlify)              │
-│  ├─ Next.js Static Pages                  │
-│  ├─ CSS & JavaScript Bundles              │
-│  └─ Asset Serving                         │
+│        Railway Frontend Service            │
+│  ├─ Next.js (Dockerfile target: web)       │
+│  ├─ CSS & JavaScript Bundles               │
+│  └─ Asset Serving                          │
 └────────┬─────────────────────────────────┘
          │ (API calls to backend)
          │
 ┌────────▼─────────────────────────────────┐
-│    Production API Server (AWS/Heroku)    │
+│    Railway Backend Service               │
 │  ├─ Fastify on Port 3001 (internal)      │
-│  ├─ Load Balancing (if needed)           │
+│  ├─ Dockerfile target: backend           │
 │  └─ CORS configured for frontend domain  │
 └────────┬─────────────────────────────────┘
          │
 ┌────────▼─────────────────────────────────┐
-│  Production Database (RDS/Managed)       │
+│  Railway PostgreSQL Service              │
 │  ├─ PostgreSQL                           │
 │  ├─ Backups enabled                      │
-│  ├─ Replication (if applicable)          │
 │  └─ Monitoring                           │
 └────────────────────────────────────────────┘
 
 Environment Variables (Production):
-├─ NEXT_PUBLIC_API_BASE_URL=https://api.lune.app
-├─ NEXT_PUBLIC_LUNE_DEV_TOKEN=prod-token-xxx
-├─ DATABASE_URL=postgresql://prod-db:5432/lune
+├─ NEXT_PUBLIC_API_BASE_URL=https://your-backend.up.railway.app
+├─ DATABASE_URL=postgresql://...@railway/railway
 ├─ JWT_SECRET=prod-secret-xxx
 └─ NODE_ENV=production
 ```
