@@ -7,6 +7,3 @@ dist/
 .DS_Store
 .env.local
 .env.*.local
-
-# Cloudflare/Vercel build output
-.vercel/
