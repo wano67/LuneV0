@@ -378,8 +378,8 @@ apps/web/                           ← Your new frontend folder
 ### Long Term (Production)
 1. Setup CI/CD pipeline
 2. Configure environment for production
-3. Setup analytics (Vercel Analytics or similar)
-4. Deploy to production (Vercel, Netlify, etc.)
+3. Setup analytics
+4. Deploy to production (Railway)
 5. Monitor performance and user feedback
 
 ---

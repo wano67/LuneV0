@@ -202,7 +202,7 @@ When ready to deploy:
 
 1. **Build frontend:** `npm run build`
 2. **Update env vars:** Set production API URL and token
-3. **Deploy to Vercel/similar:** Follow their Next.js deployment guide
+3. **Deploy to Railway:** See README.md for Railway deployment instructions
 4. **Update API CORS:** Allow your production frontend domain
 5. **Monitor:** Set up error tracking and performance monitoring
 

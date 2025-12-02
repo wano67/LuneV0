@@ -46,31 +46,44 @@ docker compose up
 
 This repository is configured for Railway deployment with separate backend and frontend services.
 
-### Backend Service
+### Backend Service (pleasing-stillness)
 
 1. Create a new Railway project
 2. Add a PostgreSQL database (Railway provisions it automatically)
 3. Connect this repository
-4. Set the config file to `railway.backend.json`
+4. In Service Settings, set the config file to `railway.backend.json`
 5. Configure environment variables:
    - `JWT_SECRET` - A secure random string for JWT signing
-   - `CORS_ORIGIN` - Your frontend Railway URL (e.g., https://your-app-web.up.railway.app)
+   - `CORS_ORIGIN` - Your frontend URL (e.g., https://www.diwanbg.work)
    - `DATABASE_URL` - Auto-injected by Railway PostgreSQL
+   - `PORT` - Set to `3001`
 
-### Frontend Service
+### Frontend Service (LuneV0)
 
 1. In the same Railway project, add another service from the same repository
-2. Set the config file to `apps/web/railway.web.json`
+2. In Service Settings, set the config file to `railway.web.json` (at root level)
 3. Configure environment variables:
-   - `NEXT_PUBLIC_API_BASE_URL` - Your backend Railway URL (e.g., https://your-app-backend.up.railway.app)
-   - `NEXT_PUBLIC_APP_URL` - Your frontend Railway URL
+   - `NEXT_PUBLIC_API_BASE_URL` - Your backend Railway URL (e.g., https://pleasing-stillness.up.railway.app)
+   - `PORT` - Set to `3000`
 
-### Custom Domain
+### Custom Domain (www.diwanbg.work)
 
-Railway allows you to add custom domains to your services:
-1. Go to your service settings
-2. Under "Networking", add your custom domain
-3. Configure your DNS to point to Railway
+To connect your custom domain:
+1. Go to the frontend service settings in Railway
+2. Under "Networking" > "Public Networking", add your custom domain: `www.diwanbg.work`
+3. Railway will provide CNAME/A records
+4. Configure your DNS provider (e.g., Cloudflare):
+   - Add a CNAME record: `www` → `<railway-provided-target>`
+   - Or for root domain: Use A records provided by Railway
+5. Wait for DNS propagation and SSL certificate provisioning
+
+### Troubleshooting Deployment
+
+If deployment fails with "Dockerfile not found":
+- Ensure the service is configured to use the correct Railway config file
+- Backend: `railway.backend.json`
+- Frontend: `railway.web.json`
+- Both files are at the repository root level
 
 ## Stack & Conventions
 - **Runtime**: Node.js + TypeScript.
