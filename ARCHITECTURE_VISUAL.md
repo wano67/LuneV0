@@ -367,7 +367,7 @@ Hook: useBusinessPerformance(businessId)
 └────────────────────────────────────────────┘
 
 Environment Variables (Production):
-├─ NEXT_PUBLIC_API_BASE_URL=https://your-backend.up.railway.app
+├─ NEXT_PUBLIC_API_BASE_URL=https://pleasing-stillness.up.railway.app
 ├─ DATABASE_URL=postgresql://...@railway/railway
 ├─ JWT_SECRET=prod-secret-xxx
 └─ NODE_ENV=production
