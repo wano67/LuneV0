@@ -20,6 +20,16 @@ async function main() {
     contributionsPerMonth: 100,
   });
 
+  personalForecast.months.forEach((month, idx) => {
+    if (idx === 0) return;
+    const previous = personalForecast.months[idx - 1];
+    if (month.projectedAmount <= previous.projectedAmount) {
+      throw new Error(
+        `Projected amount did not increase between ${previous.month} (${previous.projectedAmount}) and ${month.month} (${month.projectedAmount})`
+      );
+    }
+  });
+
   console.log('✅ Personal forecast:', personalForecast.months.slice(0, 2));
 
   const business = await businessService.createBusinessWithDefaultSettings({

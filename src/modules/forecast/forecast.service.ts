@@ -84,9 +84,12 @@ export class ForecastService {
     for (let i = 0; i < horizon; i++) {
       const bucket = addMonths(startMonth, i);
       runningTotal += contributions;
+      const monthsElapsed = i + 1;
 
       const goalsProgress = goals.map((goal) => {
-        const projectedAmount = Math.min(goal.target_amount as any as number, Number(goal.current_amount_cached) + contributions);
+        const currentAmount = Number(goal.current_amount_cached ?? 0);
+        const projectedRaw = currentAmount + contributions * monthsElapsed;
+        const projectedAmount = Math.min(goal.target_amount as any as number, projectedRaw);
         let projectedCompletionDate: Date | undefined;
         if (projectedAmount >= Number(goal.target_amount) && goal.target_date) {
           projectedCompletionDate = new Date(goal.target_date);
