@@ -26,6 +26,14 @@ export class PersonalInsightsSeasonalityService {
     const userId = normalizeUserId(options.userId);
     await assertUserExists(this.prismaClient, userId);
 
+    const accounts = await this.prismaClient.accounts.findMany({
+      where: { user_id: userId, business_id: null, is_active: true },
+      select: { id: true, currency: true },
+      orderBy: { created_at: 'asc' },
+    });
+
+    const baseCurrency = accounts[0]?.currency ?? 'EUR';
+
     const months = options.months && options.months > 0 ? options.months : 12;
     const now = new Date();
     const startMonth = this.addMonths(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)), -months + 1);
@@ -76,7 +84,7 @@ export class PersonalInsightsSeasonalityService {
 
     return {
       periodMonths: months,
-      currency: 'EUR',
+      currency: baseCurrency,
       points: enriched,
       generatedAt: new Date().toISOString(),
     };
