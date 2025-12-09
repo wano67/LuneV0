@@ -66,7 +66,7 @@ Expected API calls:
 - `GET /api/v1/businesses/{id}/insights/...` → 200 OK
 
 ### Check Browser Console
-Should show **no errors** (WarningAbout experimental features are OK)
+Should show **no errors** (Warnings about experimental features are OK)
 
 ### Verify Formatting
 - ✅ Currency shows as `$X,XXX.XX`
