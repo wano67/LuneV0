@@ -14,10 +14,9 @@ COPY tsconfig.json tsconfig.build.json prisma.config.ts ./
 COPY prisma ./prisma
 COPY src ./src
 
-# Install + Prisma + compilation TypeScript (build prod)
+# Install dependencies and run the full production build (includes Prisma + tsc-alias)
 RUN npm ci \
-  && npx prisma generate \
-  && npx tsc --project tsconfig.build.json --outDir dist
+  && npm run build
 
 ########
 # Final backend image (prod) - use glibc base to match Prisma client built in backend-build

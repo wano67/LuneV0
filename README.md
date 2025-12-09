@@ -52,19 +52,21 @@ This repository is configured for Railway deployment with separate backend and f
 2. Add a PostgreSQL database (Railway provisions it automatically)
 3. Connect this repository
 4. In Service Settings, set the config file to `railway.backend.json`
-5. Configure environment variables:
+5. Configure environment variables (defaults available in `.env.example`):
+   - `DATABASE_URL` - Auto-injected by Railway PostgreSQL
    - `JWT_SECRET` - A secure random string for JWT signing
    - `CORS_ORIGIN` - Your frontend URL (e.g., https://www.diwanbg.work)
-   - `DATABASE_URL` - Auto-injected by Railway PostgreSQL
-   - `PORT` - Set to `3001`
+   - `NEXT_PUBLIC_APP_URL` - Public URL of the frontend (used for CORS)
+   - `PORT` - Railway injects `PORT`; keep `3001` locally
 
 ### Frontend Service (LuneV0)
 
 1. In the same Railway project, add another service from the same repository
 2. In Service Settings, set the config file to `railway.web.json` (at root level)
-3. Configure environment variables:
+3. Configure environment variables (defaults available in `apps/web/.env.example`):
    - `NEXT_PUBLIC_API_BASE_URL` - Your backend Railway URL (e.g., https://pleasing-stillness.up.railway.app)
-   - `PORT` - Set to `3000`
+   - `NEXT_PUBLIC_APP_URL` - Public URL of the frontend (used for links)
+   - `PORT` - Railway injects `PORT`; keep `3000` locally
 
 ### Custom Domain (www.diwanbg.work)
 
