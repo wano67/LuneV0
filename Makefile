@@ -1,6 +1,6 @@
 DB_CONTAINER := lune-postgres-1
 DB_USER := lune
-DB_NAME := lune_dev
+DB_NAME := lunev0
 SCHEMA_FILE := personal_finance_schema.sql
 
 db-create:
