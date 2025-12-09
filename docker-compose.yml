@@ -9,6 +9,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: lunev0
     volumes:
+      # Persist Postgres data on the host using a bind mount
       - ./data/postgres:/var/lib/postgresql/data
     # If host 5432 is already used, map to 5433 to avoid conflicts
     ports:
@@ -50,7 +51,3 @@ services:
     depends_on:
       - backend
     command: sh -c "cd /app/web && npm ci && npm run dev"
-
-volumes:
-  # Persist Postgres data and avoid node_modules conflicts
-  pgdata: {}
