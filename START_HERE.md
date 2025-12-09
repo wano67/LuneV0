@@ -29,14 +29,14 @@ Your Lune frontend is **now fully integrated** with the Fastify backend. All thr
 
 ### Terminal 1: Start Backend
 ```bash
-cd ~/Documents/GitHub/Lune\ v2\ DB\ +\ ORM\ +\ API\ +\ Front
+cd <racine_du_depot>/
 npm run dev
 ```
 ✅ Fastify API will start on `http://localhost:3001`
 
-### Terminal 2: Start Frontend  
+### Terminal 2: Start Frontend
 ```bash
-cd ~/Documents/GitHub/Lune\ v2\ DB\ +\ ORM\ +\ API\ +\ Front/apps/web
+cd <racine_du_depot>/apps/web
 npm run dev
 ```
 ✅ Next.js will start on `http://localhost:3000`

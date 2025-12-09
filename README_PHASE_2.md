@@ -103,14 +103,14 @@
 
 ### Step 1: Start Backend
 ```bash
-cd ~/Documents/GitHub/Lune\ v2\ DB\ +\ ORM\ +\ API\ +\ Front
+cd <racine_du_depot>/
 npm run dev
 # Fastify starts on http://localhost:3001
 ```
 
 ### Step 2: Start Frontend
 ```bash
-cd ~/Documents/GitHub/Lune\ v2\ DB\ +\ ORM\ +\ API\ +\ Front/apps/web
+cd <racine_du_depot>/apps/web
 npm run dev
 # Next.js starts on http://localhost:3000
 ```
