@@ -174,7 +174,7 @@ None
 To verify all changes built successfully:
 
 ```bash
-cd "/Users/diwan/Documents/GitHub/Lune v2 DB + ORM + API + Front/apps/web"
+cd <racine_du_depot>/apps/web
 npm run build
 npm run lint
 ```
