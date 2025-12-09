@@ -50,13 +50,13 @@ curl -i -X OPTIONS 'http://localhost:3002/api/v1/auth/login' \
 - La base Postgres est lancée dans le conteneur `db`.
 - Les données sont persistées dans le dossier local `./data/postgres`.
 - Connexion backend :
-  - `DATABASE_URL=postgres://postgres:password@db:5432/lune_dev`
+  - `DATABASE_URL=postgres://postgres:password@db:5432/lunev0`
 - Pour accéder à Postgres en local (ex : via DBeaver, psql) :
   - Host : `localhost`
   - Port : `5433`
   - User : `postgres`
   - Password : `password`
-  - Database : `lune_dev`
+  - Database : `lunev0`
 
 ## Lancer les tests backend
 - Les scripts de test sont définis dans `package.json` (ex : `npm run test:db:all`).
