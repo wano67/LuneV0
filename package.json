@@ -15,6 +15,7 @@
     "test:quotes": "ts-node -r tsconfig-paths/register src/test/test-quotes.ts",
     "test:forecast": "ts-node -r tsconfig-paths/register src/test/test-forecast.ts",
     "test:planner": "ts-node -r tsconfig-paths/register src/test/test-planner.ts",
+    "test:seasonality": "TS_NODE_TRANSPILE_ONLY=1 ts-node -r tsconfig-paths/register src/test/test-personal-seasonality.ts",
     "test:insights": "ts-node -r tsconfig-paths/register src/test/test-insights.ts",
     "test:project-clients": "ts-node -r tsconfig-paths/register src/test/test-project-clients.ts",
     "test:invoices": "ts-node -r tsconfig-paths/register src/test/test-invoices.ts",
