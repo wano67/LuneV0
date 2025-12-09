@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api/http";
@@ -54,7 +54,7 @@ export function useApiResource<T = unknown>(
     } finally {
       setLoading(false);
     }
-  }, [url, method, JSON.stringify(body ?? null), enabled, auth]);
+  }, [url, method, body, enabled, auth]);
 
   useEffect(() => {
     void fetchResource();
