@@ -48,10 +48,13 @@ async function main() {
     milestones: timeline.milestones.length,
   });
 
+  const from = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000);
+  const to = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
   const calendar = await plannerService.getUserWorkloadCalendar({
     userId: user.id,
-    from: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    to: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    from,
+    to,
   });
 
   console.log('✅ Workload calendar days:', calendar.days.length);
@@ -59,6 +62,26 @@ async function main() {
   if (!timeline.tasks.some((t) => t.id === task.id)) throw new Error('Task missing in timeline');
   if (!timeline.milestones.some((m) => m.id === milestone.id)) throw new Error('Milestone missing in timeline');
   if (calendar.days.length === 0) throw new Error('Calendar should have entries');
+
+  const calendarTaskDay = calendar.days.find((day) => day.tasks.some((t) => t.taskId === task.id));
+  if (!calendarTaskDay) throw new Error('Task missing in calendar days');
+
+  const fromDateStr = from.toISOString().slice(0, 10);
+  const toDateStr = to.toISOString().slice(0, 10);
+
+  for (const day of calendar.days) {
+    if (day.date < fromDateStr || day.date > toDateStr) {
+      throw new Error(`Calendar entry ${day.date} outside requested window`);
+    }
+  }
+
+  for (let i = 1; i < calendar.days.length; i += 1) {
+    const prev = calendar.days[i - 1].date;
+    const current = calendar.days[i].date;
+    if (prev > current) {
+      throw new Error('Calendar days are not sorted chronologically');
+    }
+  }
 
   console.log('✅ Planner smoke test completed successfully.');
 }
