@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { defineConfig } from 'prisma/config';
 
 const databaseUrl =
-  process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/lune';
+  process.env.DATABASE_URL ?? 'postgresql://postgres:password@localhost:5432/lunev0';
 
 if (!process.env.DATABASE_URL) {
   console.warn(

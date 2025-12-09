@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   description: "Personal & Business Finance Management",
 };
 
+// Force dynamic rendering to avoid prerendering client-only auth surfaces
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: {

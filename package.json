@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "npm run start:prod",
-    "build": "tsc -p tsconfig.json --outDir dist && tsc-alias -p tsconfig.json",
+    "build": "npm run prisma:generate && tsc -p tsconfig.build.json --outDir dist && tsc-alias -p tsconfig.build.json",
     "dev:api": "ts-node -r tsconfig-paths/register src/api/server.ts",
     "prisma:generate": "prisma generate",
     "start:prod": "node dist/api/server.js",
